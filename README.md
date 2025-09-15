@@ -13,4 +13,9 @@ Corruption and poor service delivery are key challenges to Africa’s developmen
 
 **Jiseti** bridges this gap by enabling citizens to submit reports with supporting evidence, while administrators oversee cases and update statuses.
 
+##front-end
+https://jiseti-frontend-w02k.onrender.com/
+
+##back-end
+https://jiseti-backend-zt8g.onrender.com/
 ---
