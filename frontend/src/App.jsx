@@ -1,27 +1,22 @@
-import { useState } from 'react'
-import './assets/css/App.css'
+import { useEffect, useState } from "react";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [status, setStatus] = useState("Loading...");
+
+  useEffect(() => {
+    // ⚠️ Replace this with your actual backend URL from Render
+    fetch("https://<your-backend-service>.onrender.com/api/health")
+      .then((res) => res.json())
+      .then((data) => setStatus(data.status))
+      .catch((err) => setStatus("Error connecting to backend"));
+  }, []);
 
   return (
-    <>
-      <div>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div style={{ textAlign: "center", marginTop: "50px" }}>
+      <h1>Jiseti Frontend</h1>
+      <p>Backend Status: {status}</p>
+    </div>
+  );
 }
 
-export default App
+export default App;
