@@ -4,11 +4,10 @@ function App() {
   const [status, setStatus] = useState("Loading...");
 
   useEffect(() => {
-    // ⚠️ Replace this with your actual backend URL from Render
-    fetch("https://<your-backend-service>.onrender.com/api/health")
+    fetch("https://jiseti-backend-zt8g.onrender.com/api/health")
       .then((res) => res.json())
       .then((data) => setStatus(data.status))
-      .catch((err) => setStatus("Error connecting to backend"));
+      .catch(() => setStatus("Error connecting to backend"));
   }, []);
 
   return (
