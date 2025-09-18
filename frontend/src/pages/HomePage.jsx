@@ -3,6 +3,7 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../features/auth/authSlice";
 import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
 const HomePage = () => {
   const dispatch = useDispatch();
@@ -13,15 +14,15 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 to-yellow-950">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm">
+      <nav className="bg-orange-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="h-8 w-8 bg-blue-600 rounded-md"></div>
-                <span className="ml-2 text-xl font-bold text-blue-800">Jiseti Civic</span>
+                <div className="h-8 w-8 bg-gray-300 rounded-md"></div>
+                <span className="ml-2 text-xl font-bold text-black playfair-display">Jiseti</span>
               </div>
             </div>
             <div className="flex items-center">
@@ -29,20 +30,20 @@ const HomePage = () => {
                 <div className="space-x-3">
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-blue-600 font-medium rounded-md hover:text-blue-800 hover:bg-blue-50 transition-colors"
+                    className="px-4 py-2 text-black font-medium rounded-md hover:text-yellow-950 hover:bg-orange-50 transition-colors"
                   >
                     Login
                   </Link>
                   <Link
                     to="/signup"
-                    className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 bg-black text-white font-medium rounded-md hover:bg-yellow-950 transition-colors"
                   >
                     Sign Up
                   </Link>
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
-                  <span className="text-gray-700">Hello, <span className="font-semibold">{user?.name}</span></span>
+                  <span className="text-black">Hello, <span className="font-semibold">{user?.name}</span></span>
                   <button
                     onClick={handleLogout}
                     className="px-4 py-2 text-red-600 font-medium rounded-md hover:text-red-800 hover:bg-red-50 transition-colors"
@@ -61,27 +62,27 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:grid lg:grid-cols-2 lg:gap-8 items-center">
             <div className="mt-10 lg:mt-0">
-              <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
-                Engage with your <span className="text-blue-600">community</span>
+              <h1 className="text-3xl font-extrabold text-gray-950 sm:text-4xl sm:tracking-tight lg:text-6xl lg:pb-6">
+                Shine a Light on Corruption — Your Voice, Your Power, Your Change.
               </h1>
-              <p className="mt-5 text-xl text-gray-500">
-                Jiseti Civic Platform connects citizens with local government to foster transparency, participation, and community development.
+              <p className="mt-5 text-xl text-yellow-950">
+                Jiseti Platform connects citizens with local government to foster transparency, participation, and community development.
               </p>
               <div className="mt-8 flex space-x-4">
                 {!token ? (
                   <>
                     <Link
                       to="/signup"
-                      className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                      className="px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-yellow-950 transition-colors"
                     >
                       Get Started
                     </Link>
-                    <Link
-                      to="/about"
+                    <a
+                      href="#about"
                       className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
                     >
                       Learn More
-                    </Link>
+                    </a>
                   </>
                 ) : (
                   <Link
@@ -96,7 +97,7 @@ const HomePage = () => {
             <div className="mt-10 lg:mt-0">
               <img
                 className="rounded-lg shadow-xl"
-                src="https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                src="./images/justice-pic.jpg"
                 alt="Community engagement"
               />
             </div>
@@ -105,10 +106,10 @@ const HomePage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="py-16 bg-white">
+      <div className="py-16 bg-orange-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">How it works</h2>
+            <h2 className="text-4xl font-extrabold text-gray-900" id="about">How it works</h2>
             <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
               Our platform makes civic engagement simple and effective
             </p>
@@ -119,13 +120,13 @@ const HomePage = () => {
               <div className="flow-root bg-gray-50 rounded-lg px-6 pb-8">
                 <div className="-mt-6">
                   <div>
-                    <span className="inline-flex items-center justify-center p-3 bg-blue-500 rounded-md shadow-lg">
+                    <span className="inline-flex items-center justify-center p-3 bg-yellow-950 rounded-md shadow-lg">
                       <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </span>
                   </div>
-                  <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">Report Issues</h3>
+                  <h3 className="mt-8 text-2xl font-medium text-gray-900 tracking-tight">Report Issues</h3>
                   <p className="mt-5 text-base text-gray-500">
                     Submit and track community issues like potholes, broken streetlights, or sanitation problems.
                   </p>
@@ -137,13 +138,13 @@ const HomePage = () => {
               <div className="flow-root bg-gray-50 rounded-lg px-6 pb-8">
                 <div className="-mt-6">
                   <div>
-                    <span className="inline-flex items-center justify-center p-3 bg-blue-500 rounded-md shadow-lg">
+                    <span className="inline-flex items-center justify-center p-3 bg-yellow-950 rounded-md shadow-lg">
                       <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </span>
                   </div>
-                  <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">Participate in Decisions</h3>
+                  <h3 className="mt-8 text-2xl font-medium text-gray-900 tracking-tight">Participate in Decisions</h3>
                   <p className="mt-5 text-base text-gray-500">
                     Vote on local proposals, provide feedback on city planning, and join community discussions.
                   </p>
@@ -155,13 +156,13 @@ const HomePage = () => {
               <div className="flow-root bg-gray-50 rounded-lg px-6 pb-8">
                 <div className="-mt-6">
                   <div>
-                    <span className="inline-flex items-center justify-center p-3 bg-blue-500 rounded-md shadow-lg">
+                    <span className="inline-flex items-center justify-center p-3 bg-yellow-950 rounded-md shadow-lg">
                       <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
                     </span>
                   </div>
-                  <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">Track Progress</h3>
+                  <h3 className="mt-8 text-2xl font-medium text-gray-900 tracking-tight">Track Progress</h3>
                   <p className="mt-5 text-base text-gray-500">
                     Follow the status of community projects and see how your participation makes a difference.
                   </p>
@@ -173,18 +174,18 @@ const HomePage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-blue-700">
+      <div className="bg-gradient-to-bl from-orange-100 to-yellow-850">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             <span className="block">Ready to make a difference?</span>
-            <span className="block text-blue-200">Join your community today.</span>
+            <span className="block text-black">Join your community today.</span>
           </h2>
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
             {!token ? (
               <div className="inline-flex rounded-md shadow">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50"
+                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-black bg-white hover:bg-yellow-950 hover:text-white"
                 >
                   Get started
                 </Link>
@@ -204,7 +205,7 @@ const HomePage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white">
+      <footer className="bg-orange-50">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
           <div className="md:flex md:items-center md:justify-between">
             <div className="mt-8 md:mt-0 md:order-1">
