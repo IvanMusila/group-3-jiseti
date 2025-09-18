@@ -1,4 +1,10 @@
 import { useEffect, useState } from "react";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import HomePage from "./pages/HomePage";
+// import RequireAuth from './features/auth/RequireAuth';
 
 function App() {
   const [status, setStatus] = useState("Loading...");
@@ -11,10 +17,11 @@ function App() {
   }, []);
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>Jiseti Frontend</h1>
-      <p>Backend Status: {status}</p>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/" element={<HomePage />} />
+    </Routes>
   );
 }
 
