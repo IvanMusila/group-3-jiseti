@@ -1,21 +1,23 @@
-import { useEffect, useState } from "react";
+import React from "react";
+import Signup from "./features/auth/Signup";
+import Login from "./features/auth/Login";
+import CreateReport from "./features/reports/CreateReport";
+import ReportsList from "./features/reports/ReportsList";
 
-function App() {
-  const [status, setStatus] = useState("Loading...");
-
-  useEffect(() => {
-    fetch("https://jiseti-backend-zt8g.onrender.com/api/health")
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus("Error connecting to backend"));
-  }, []);
-
+export default function App(){
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>Jiseti Frontend</h1>
-      <p>Backend Status: {status}</p>
+    <div style={{padding:20}}>
+      <h1>Jiseti (demo)</h1>
+      <div style={{display:"flex", gap:20}}>
+        <div style={{flex:1}}>
+          <Signup />
+          <Login />
+          <CreateReport />
+        </div>
+        <div style={{flex:2}}>
+          <ReportsList />
+        </div>
+      </div>
     </div>
   );
 }
-
-export default App;
