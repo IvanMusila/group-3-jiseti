@@ -30,7 +30,7 @@ const HomePage = () => {
                 <div className="space-x-3">
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-black font-medium rounded-md hover:text-yellow-950 hover:bg-orange-50 transition-colors"
+                    className="px-4 py-2 text-black font-medium rounded-md hover:text-yellow-950 hover:bg-orange-100 transition-colors"
                   >
                     Login
                   </Link>
