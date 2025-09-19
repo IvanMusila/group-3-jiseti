@@ -1,23 +1,28 @@
-import React from "react";
-import Signup from "./features/auth/Signup";
-import Login from "./features/auth/Login";
+import { useEffect, useState } from "react";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import HomePage from "./pages/HomePage";
 import CreateReport from "./features/reports/CreateReport";
 import ReportsList from "./features/reports/ReportsList";
+// import RequireAuth from './features/auth/RequireAuth';
 
-export default function App(){
+export default function App() {
+  const [status, setStatus] = useState("Loading...");
+
+  useEffect(() => {
+    fetch("https://jiseti-backend-zt8g.onrender.com/api/health")
+      .then((res) => res.json())
+      .then((data) => setStatus(data.status))
+      .catch(() => setStatus("Error connecting to backend"));
+  }, []);
+
   return (
-    <div style={{padding:20}}>
-      <h1>Jiseti (demo)</h1>
-      <div style={{display:"flex", gap:20}}>
-        <div style={{flex:1}}>
-          <Signup />
-          <Login />
-          <CreateReport />
-        </div>
-        <div style={{flex:2}}>
-          <ReportsList />
-        </div>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/" element={<HomePage />} />
+    </Routes>
   );
 }
