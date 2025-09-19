@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../api/api";
+import API from "../auth/authApi";
 
 export const createReport = createAsyncThunk("reports/create", async (payload) => {
   const r = await API.post("/reports/", payload);
