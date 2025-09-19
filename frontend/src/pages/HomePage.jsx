@@ -16,13 +16,19 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 to-yellow-950">
       {/* Navigation */}
-      <nav className="bg-orange-50 shadow-sm">
+      <nav className="bg-orange-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="h-8 w-8 bg-gray-300 rounded-md"></div>
-                <span className="ml-2 text-xl font-bold text-black playfair-display">Jiseti</span>
+                <div className="h-12 w-40 ">
+                    <img
+                        className=" "
+                        src="./images/jiseti-logo2.png"
+                        alt="Website logo"
+                    />
+                </div>
+                {/* <span className="ml-2 text-xl font-bold text-black playfair-display">Jiseti</span> */}
               </div>
             </div>
             <div className="flex items-center">
@@ -30,7 +36,7 @@ const HomePage = () => {
                 <div className="space-x-3">
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-black font-medium rounded-md hover:text-yellow-950 hover:bg-orange-100 transition-colors"
+                    className="px-4 py-2 text-black font-medium rounded-md hover:text-yellow-950 hover:bg-orange-200 transition-colors"
                   >
                     Login
                   </Link>
@@ -106,7 +112,7 @@ const HomePage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="py-16 bg-orange-50">
+      <div className="py-16 bg-orange-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-4xl font-extrabold text-gray-900" id="about">How it works</h2>
@@ -205,7 +211,7 @@ const HomePage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-orange-50">
+      <footer className="bg-orange-100">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
           <div className="md:flex md:items-center md:justify-between">
             <div className="mt-8 md:mt-0 md:order-1">
