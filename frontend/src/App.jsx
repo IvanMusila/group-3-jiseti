@@ -4,9 +4,11 @@ import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import HomePage from "./pages/HomePage";
+import CreateReport from "./features/reports/CreateReport";
+import ReportsList from "./features/reports/ReportsList";
 // import RequireAuth from './features/auth/RequireAuth';
 
-function App() {
+export default function App() {
   const [status, setStatus] = useState("Loading...");
 
   useEffect(() => {
@@ -24,5 +26,3 @@ function App() {
     </Routes>
   );
 }
-
-export default App;

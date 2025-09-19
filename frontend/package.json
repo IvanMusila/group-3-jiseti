@@ -1,8 +1,7 @@
 {
-  "name": "frontend",
-  "version": "1.0.0",
+  "name": "jiseti-frontend",
+  "version": "0.1.0",
   "private": true,
-  "type": "module",
   "dependencies": {
     "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/vite": "^4.1.13",
@@ -24,9 +23,8 @@
     "vite": "^5.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "echo \"No tests yet\" && exit 0"
+    "start": "react-scripts start",
+    "test": "react-scripts test --env=jsdom",
+    "build": "react-scripts build"
   }
 }

@@ -1,8 +1,8 @@
-Flask==3.0.3
-Flask-Cors==4.0.1
-Flask-SQLAlchemy==3.1.1
-psycopg2-binary==2.9.9
-python-dotenv==1.0.1
-requests==2.32.3
-pytest==8.2.0
-gunicorn==21.2.0
+Flask
+Flask-Cors
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-JWT-Extended
+Werkzeug
+psycopg2-binary
+python-dotenv
