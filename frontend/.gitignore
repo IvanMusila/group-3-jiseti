@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+/frontend/.env
+/Users/anthonyngigi/Development/code/phase5/group-3-jiseti/frontend/.env
+
+
+# local env
+frontend/.env
+frontend/.env.*
