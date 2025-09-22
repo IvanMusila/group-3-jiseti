@@ -21,7 +21,7 @@ const HomePage = () => {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="h-12 w-40 ">
+                <div className="h-14 w-42 ">
                     <img
                         className=" "
                         src="./images/jiseti-logo2.png"
@@ -150,9 +150,9 @@ const HomePage = () => {
                       </svg>
                     </span>
                   </div>
-                  <h3 className="mt-8 text-2xl font-medium text-gray-900 tracking-tight">Participate in Decisions</h3>
+                  <h3 className="mt-8 text-2xl font-medium text-gray-900 tracking-tight">Shape Your Neighborhood</h3>
                   <p className="mt-5 text-base text-gray-500">
-                    Vote on local proposals, provide feedback on city planning, and join community discussions.
+                    Contribute to making your area safer and cleaner. Collaborate with neighbors on shared concerns.
                   </p>
                 </div>
               </div>
@@ -170,7 +170,7 @@ const HomePage = () => {
                   </div>
                   <h3 className="mt-8 text-2xl font-medium text-gray-900 tracking-tight">Track Progress</h3>
                   <p className="mt-5 text-base text-gray-500">
-                    Follow the status of community projects and see how your participation makes a difference.
+                    Follow the status of your reported issues in real time. See when reports are pending, being investigated, or resolved.
                   </p>
                 </div>
               </div>
@@ -215,7 +215,7 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
           <div className="md:flex md:items-center md:justify-between">
             <div className="mt-8 md:mt-0 md:order-1">
-              <p className="text-center text-base text-gray-400">
+              <p className="text-center text-base text-gray-500">
                 &copy; 2023 Jiseti. All rights reserved.
               </p>
             </div>
