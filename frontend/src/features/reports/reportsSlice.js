@@ -43,7 +43,7 @@ const reportsSlice = createSlice({
         s.items = a.payload.items || [];
         s.page = a.payload.page || 1;
         s.totalPages = a.payload.totalPages || 1;
-        s.totalItems = a.payload.totalItems || s.items.length;
+        s.totalItems = a.payload.totalItems ?? s.items.length;
       })
       .addCase(fetchReports.rejected, (s, a) => { s.loading = false; s.error = a.error.message || 'Failed to fetch'; })
       // create

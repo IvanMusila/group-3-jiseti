@@ -5,7 +5,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((cfg) => {
-  const token = localStorage.getItem('accessToken'); // Member 2 will set this
+  const token = localStorage.getItem('accessToken'); // Member 2 stores this
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
   return cfg;
 });

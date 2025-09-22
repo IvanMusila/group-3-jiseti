@@ -27,10 +27,11 @@ export default function ReportList() {
             <div><strong>{r.title}</strong> — <em>{r.type}</em></div>
             <div style={{ fontSize: 13, color: '#666' }}>{r.description}</div>
             <div style={{ fontSize: 13 }}>Status: <b>{r.status}</b></div>
-            {r.location && <div style={{ fontSize: 12 }}>Loc: {typeof r.location === 'string'
-              ? r.location : `${r.location.lat}, ${r.location.lng}`}</div>}
+            {r.location && <div style={{ fontSize: 12 }}>
+              Loc: {typeof r.location === 'string' ? r.location : `${r.location.lat}, ${r.location.lng}`}
+            </div>}
             <div style={{ marginTop: 8 }}>
-              {/* Guarding edit/delete is simple for now; full guard will check creator & status once auth is wired */}
+              {/* Later: guard by owner/admin; for now just pending */}
               {r.status === 'pending' && (
                 <>
                   <Link to={`/reports/${r.id}/edit`} style={{ marginRight: 8 }}>Edit</Link>

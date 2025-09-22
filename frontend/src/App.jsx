@@ -5,8 +5,8 @@ import ReportForm from './features/reports/components/ReportForm';
 export default function App() {
   return (
     <BrowserRouter>
-      <nav style={{ padding: 12, borderBottom: '1px solid #eee' }}>
-        <Link to="/reports">Reports</Link>{' '}
+      <nav style={{ padding: 12, borderBottom: '1px solid #eee', display: 'flex', gap: 12 }}>
+        <Link to="/reports">Reports</Link>
         <Link to="/reports/new">New Report</Link>
       </nav>
       <Routes>
