@@ -30,12 +30,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "echo \"No tests yet\" && exit 0"
-  }
-}
+  },
 
-
-// anthony
-{
   "scripts": {
     "dev": "vite",
     "build": "vite build",
