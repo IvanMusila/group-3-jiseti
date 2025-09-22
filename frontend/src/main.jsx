@@ -6,7 +6,9 @@ import App from './App'
 import './index.css'
 
 async function enableMocks() {
-  if (import.meta.env.DEV) {
+  // Toggle with env var so you can disable mocks once backend is ready
+  // Keep MSW for tests regardless.
+  if (import.meta.env.VITE_USE_MSW === 'true') {
     const { worker } = await import('./mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }

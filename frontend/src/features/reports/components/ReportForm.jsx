@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createReport, updateReport } from '../reportsSlice';
 import { useNavigate, useParams } from 'react-router-dom';
 
+// Geolocation API per MDN
+// https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition
+
 export default function ReportForm({ mode }) {
   const dispatch = useDispatch();
   const nav = useNavigate();
@@ -22,7 +25,7 @@ export default function ReportForm({ mode }) {
 
   useEffect(() => {
     if (mode === 'edit' && !existing) {
-      // In a real app, you’d fetch the one item; for now we assume it’s in memory
+      // If direct-navigating to /edit and item not loaded, you'd fetch it here.
     }
   }, [mode, existing]);
 
@@ -31,7 +34,12 @@ export default function ReportForm({ mode }) {
   const geoMe = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => setForm(f => ({ ...f, lat: pos.coords.latitude.toFixed(5), lng: pos.coords.longitude.toFixed(5) })),
+      (pos) =>
+        setForm(f => ({
+          ...f,
+          lat: Number(pos.coords.latitude).toFixed(5),
+          lng: Number(pos.coords.longitude).toFixed(5)
+        })),
       () => setError('Geolocation permission denied')
     );
   };
@@ -39,12 +47,14 @@ export default function ReportForm({ mode }) {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.title || !form.description) return setError('Title and description are required');
+
     const payload = {
       type: form.type,
       title: form.title,
       description: form.description,
       location: (form.lat && form.lng) ? { lat: Number(form.lat), lng: Number(form.lng) } : undefined
     };
+
     try {
       if (mode === 'edit' && existing) {
         await dispatch(updateReport({ id: existing.id, patch: payload })).unwrap();
@@ -69,14 +79,17 @@ export default function ReportForm({ mode }) {
             <option value="intervention">Intervention</option>
           </select>
         </label>
+
         <label>
           Title
           <input name="title" value={form.title} onChange={onChange} />
         </label>
+
         <label>
           Description
           <textarea name="description" value={form.description} onChange={onChange} />
         </label>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <label>
             Lat
@@ -87,6 +100,7 @@ export default function ReportForm({ mode }) {
             <input name="lng" value={form.lng} onChange={onChange} type="number" step="0.00001" min="-180" max="180" />
           </label>
         </div>
+
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={geoMe}>Use my location</button>
           <button type="submit">{mode === 'edit' ? 'Save Changes' : 'Create Report'}</button>

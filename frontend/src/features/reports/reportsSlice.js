@@ -1,15 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../lib/api';
 
-const initialState = {
-  items: [],
-  page: 1,
-  totalPages: 1,
-  totalItems: 0,
-  loading: false,
-  error: null
-};
-
+// Async thunks (official pattern)
+// https://redux-toolkit.js.org/api/createAsyncThunk
 export const fetchReports = createAsyncThunk('reports/fetch', async (page = 1) => {
   const { data } = await api.get(`/reports?page=${page}&limit=10`);
   return data; // { items, page, totalPages, totalItems }
@@ -30,6 +23,15 @@ export const deleteReport = createAsyncThunk('reports/delete', async (id) => {
   return id;
 });
 
+const initialState = {
+  items: [],
+  page: 1,
+  totalPages: 1,
+  totalItems: 0,
+  loading: false,
+  error: null
+};
+
 const reportsSlice = createSlice({
   name: 'reports',
   initialState,
@@ -46,18 +48,21 @@ const reportsSlice = createSlice({
         s.totalItems = a.payload.totalItems ?? s.items.length;
       })
       .addCase(fetchReports.rejected, (s, a) => { s.loading = false; s.error = a.error.message || 'Failed to fetch'; })
+
       // create
       .addCase(createReport.fulfilled, (s, a) => {
         s.items = [a.payload, ...s.items];
         s.totalItems += 1;
       })
       .addCase(createReport.rejected, (s, a) => { s.error = a.error.message || 'Create failed'; })
+
       // update
       .addCase(updateReport.fulfilled, (s, a) => {
         const idx = s.items.findIndex(r => r.id === a.payload.id);
         if (idx !== -1) s.items[idx] = a.payload;
       })
       .addCase(updateReport.rejected, (s, a) => { s.error = a.error.message || 'Update failed'; })
+
       // delete
       .addCase(deleteReport.fulfilled, (s, a) => {
         s.items = s.items.filter(r => r.id !== a.payload);

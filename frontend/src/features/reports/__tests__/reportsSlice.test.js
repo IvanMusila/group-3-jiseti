@@ -38,7 +38,6 @@ test('create/update/delete cycle', async () => {
 });
 
 test('update blocked when status not pending', async () => {
-  // Force server to return INVALID_STATUS
   server.use(
     http.put('/reports/:id', async () => HttpResponse.json({ error: 'INVALID_STATUS' }, { status: 400 }))
   );

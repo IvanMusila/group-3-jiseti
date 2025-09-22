@@ -1,9 +1,18 @@
 import { http, HttpResponse } from 'msw';
 
+// Seed data with mixed ownership/status
 let seedId = 3;
 let reports = [
-  { id: 2, type: 'intervention', title: 'Bridge repair', description: 'Cracks', location: { lat: -1.29, lng: 36.82 }, status: 'pending', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 7 },
-  { id: 1, type: 'red-flag', title: 'Procurement fraud', description: 'Suspicious tender', location: { lat: -1.30, lng: 36.82 }, status: 'under-investigation', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 9 }
+  {
+    id: 2, type: 'intervention', title: 'Bridge repair', description: 'Cracks on the main span',
+    location: { lat: -1.29, lng: 36.82 }, status: 'pending',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 7
+  },
+  {
+    id: 1, type: 'red-flag', title: 'Procurement fraud', description: 'Suspicious tender award',
+    location: { lat: -1.30, lng: 36.82 }, status: 'under-investigation',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 9
+  }
 ];
 
 function paginate(arr, page=1, limit=10){

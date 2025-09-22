@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReports, deleteReport } from '../reportsSlice';
 import { Link, useSearchParams } from 'react-router-dom';
+import { selectCurrentUserId, selectCurrentUserRole } from '../../auth/selectors';
 
 export default function ReportList() {
   const dispatch = useDispatch();
@@ -10,6 +11,12 @@ export default function ReportList() {
   const { items, totalPages, loading, error } = useSelector(s => s.reports);
 
   useEffect(() => { dispatch(fetchReports(page)); }, [dispatch, page]);
+
+  const currentUserId = useMemo(() => selectCurrentUserId(), []);
+  const currentRole = useMemo(() => selectCurrentUserRole(), []);
+
+  const canEditDelete = (r) =>
+    r.status === 'pending' && (r.createdBy === currentUserId || currentRole === 'admin');
 
   const onPrev = () => setSp({ page: String(Math.max(1, page - 1)) });
   const onNext = () => setSp({ page: String(Math.min(totalPages, page + 1)) });
@@ -27,12 +34,13 @@ export default function ReportList() {
             <div><strong>{r.title}</strong> — <em>{r.type}</em></div>
             <div style={{ fontSize: 13, color: '#666' }}>{r.description}</div>
             <div style={{ fontSize: 13 }}>Status: <b>{r.status}</b></div>
-            {r.location && <div style={{ fontSize: 12 }}>
-              Loc: {typeof r.location === 'string' ? r.location : `${r.location.lat}, ${r.location.lng}`}
-            </div>}
+            {r.location && (
+              <div style={{ fontSize: 12 }}>
+                Loc: {typeof r.location === 'string' ? r.location : `${r.location.lat}, ${r.location.lng}`}
+              </div>
+            )}
             <div style={{ marginTop: 8 }}>
-              {/* Later: guard by owner/admin; for now just pending */}
-              {r.status === 'pending' && (
+              {canEditDelete(r) && (
                 <>
                   <Link to={`/reports/${r.id}/edit`} style={{ marginRight: 8 }}>Edit</Link>
                   <button onClick={() => dispatch(deleteReport(r.id))}>Delete</button>
