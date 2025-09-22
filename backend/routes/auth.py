@@ -1,12 +1,4 @@
 from flask import Blueprint, request, jsonify
-<<<<<<< HEAD
-from backend.models import db, User
-from flask_jwt_extended import create_access_token
-
-auth_bp = Blueprint("auth", __name__)
-
-# Signup route
-=======
 from backend.app import db
 from backend.models.user import User
 from flask_jwt_extended import (
@@ -17,7 +9,6 @@ from flask_jwt_extended import (
 
 auth_bp = Blueprint("auth", __name__)
 
->>>>>>> main
 @auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json()
@@ -36,32 +27,14 @@ def signup():
     db.session.add(user)
     db.session.commit()
 
-<<<<<<< HEAD
-    return jsonify({"message": "User created successfully"}), 201
-
-# Login route
-=======
     return jsonify({"msg": "User created successfully"}), 201
 
->>>>>>> main
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
 
-<<<<<<< HEAD
-    user = User.query.filter_by(email=email).first()
-
-    if user and user.check_password(password):
-        token = create_access_token(identity=user.id)
-        return jsonify({
-            "token": token,
-            "user": {"id": user.id, "username": user.username}
-        }), 200
-
-    return jsonify({"error": "Invalid credentials"}), 401
-=======
     if not email or not password:
         return jsonify({"error": "Missing email or password"}), 400
 
@@ -88,7 +61,7 @@ def profile():
     try:
         current_user_id = get_jwt_identity()
         # Convert back to integer for database query
-        user = User.query.get(int(current_user_id))
+        user = db.session.get(User, int(current_user_id))
 
         if not user:
             return jsonify({"error": "User not found"}), 404
@@ -101,4 +74,3 @@ def profile():
         }), 200
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid user identity"}), 422
->>>>>>> main
