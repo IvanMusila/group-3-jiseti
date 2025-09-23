@@ -9,12 +9,12 @@ jwt = JWTManager()
 def create_app(testing=False):
     app = Flask(__name__)
 
-    # Default config
+    # Default configuration
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = "super-secret"  # change in production
 
-    # Testing config
+    # Testing
     if testing:
         app.config["TESTING"] = True
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # in-memory DB
@@ -25,8 +25,16 @@ def create_app(testing=False):
     jwt.init_app(app)
     CORS(app)
 
-    # Import and register blueprints
+    # UTHENTICATION
     from backend.routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    
+    # Import and register blueprints REPORTS
+    try:
+        from backend.routes.reports import reports_bp
+        app.register_blueprint(reports_bp, url_prefix="/api/reports")
+    except ImportError:
+        # Reports feature will be fully implimented while merging with front end
+        pass
 
     return app
