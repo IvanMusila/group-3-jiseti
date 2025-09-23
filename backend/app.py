@@ -12,21 +12,28 @@ def create_app(testing=False):
     # Default config
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["JWT_SECRET_KEY"] = "super-secret"  # change in production
+    app.config["JWT_SECRET_KEY"] = "super-secret"
 
     # Testing config
     if testing:
         app.config["TESTING"] = True
-        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # in-memory DB
-        app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False  # tokens never expire in tests
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
 
     # Init extensions
     db.init_app(app)
     jwt.init_app(app)
     CORS(app)
 
-    # Import and register blueprints
+    # Authentication routes
     from backend.routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    
+    # Report routes (if they exist)
+    try:
+        from backend.routes.reports import reports_bp
+        app.register_blueprint(reports_bp, url_prefix="/api/reports")
+    except ImportError:
+        pass
 
     return app
