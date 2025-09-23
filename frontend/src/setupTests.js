@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+<<<<<<< HEAD
 import { server } from './mocks/server';
 
 // RTL/Jest setup
@@ -6,3 +7,5 @@ import { server } from './mocks/server';
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
+=======
+>>>>>>> develop
