@@ -2,6 +2,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from dotenv import load_dotenv
+from extensions import db, migrate, jwt
+import os
+import logging
+
+load_dotenv()
+
+logging.basicConfig(level=logging.DEBUG)
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -24,17 +32,16 @@ def create_app(testing=False):
     db.init_app(app)
     jwt.init_app(app)
     CORS(app)
-
-    # UTHENTICATION
-    from backend.routes.auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix="/auth")
     
-    # Import and register blueprints REPORTS
-    try:
-        from backend.routes.reports import reports_bp
-        app.register_blueprint(reports_bp, url_prefix="/api/reports")
-    except ImportError:
-        # Reports feature will be fully implimented while merging with front end
-        pass
-
+    # Your routes and configurations
+    @app.route('/')
+    def hello():
+        return 'Hello World!'
+    
     return app
+
+# Create app instance
+app = create_app()
+
+if __name__ == '__main__':
+    app.run(debug=True)
