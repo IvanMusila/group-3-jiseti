@@ -210,6 +210,25 @@ export default function AdminReportDetail() {
           </ul>
         )}
       </article>
+
+      <article className="admin-detail__card">
+        <h2>Moderation Notes</h2>
+        {report.moderationNotes?.length ? (
+          <ul className="admin-notes">
+            {report.moderationNotes.map((entry) => (
+              <li key={entry.id}>
+                <div>
+                  <strong>{formatDate(entry.createdAt)}</strong>
+                  <span>Status: {prettyStatus(entry.status)}</span>
+                </div>
+                <p>{entry.note}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="admin-empty">No moderation notes yet.</p>
+        )}
+      </article>
     </section>
   );
 }
