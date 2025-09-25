@@ -1,28 +1,5 @@
-<<<<<<< HEAD
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../lib/api';
-
-// Async thunks (official pattern)
-// https://redux-toolkit.js.org/api/createAsyncThunk
-export const fetchReports = createAsyncThunk('reports/fetch', async (page = 1) => {
-  const { data } = await api.get(`/reports?page=${page}&limit=10`);
-  return data; // { items, page, totalPages, totalItems }
-});
-
-export const createReport = createAsyncThunk('reports/create', async (payload) => {
-  const { data } = await api.post('/reports', payload);
-  return data; // Report
-});
-
-export const updateReport = createAsyncThunk('reports/update', async ({ id, patch }) => {
-  const { data } = await api.put(`/reports/${id}`, patch);
-  return data; // Report
-});
-
-export const deleteReport = createAsyncThunk('reports/delete', async (id) => {
-  await api.delete(`/reports/${id}`);
-  return id;
-});
 
 const initialState = {
   items: [],
@@ -30,76 +7,91 @@ const initialState = {
   totalPages: 1,
   totalItems: 0,
   loading: false,
-  error: null
+  error: null,
 };
+
+function toFormData(body) {
+  const formData = new FormData();
+  formData.append('payload', JSON.stringify(body.payload));
+  if (body.attachment) {
+    formData.append('attachment', body.attachment);
+  }
+  return formData;
+}
+
+export const fetchReports = createAsyncThunk('reports/fetch', async (page = 1) => {
+  const { data } = await api.get(`/reports?page=${page}&limit=10`);
+  return data;
+});
+
+export const createReport = createAsyncThunk('reports/create', async (payload) => {
+  const { attachment, ...rest } = payload;
+  if (attachment) {
+    const { data } = await api.post('/reports', toFormData({ payload: rest, attachment }));
+    return data;
+  }
+  const { data } = await api.post('/reports', rest);
+  return data;
+});
+
+export const updateReport = createAsyncThunk('reports/update', async ({ id, patch }) => {
+  const { attachment, ...rest } = patch;
+  if (attachment) {
+    const { data } = await api.put(`/reports/${id}`, toFormData({ payload: rest, attachment }));
+    return data;
+  }
+  const { data } = await api.put(`/reports/${id}`, rest);
+  return data;
+});
+
+export const deleteReport = createAsyncThunk('reports/delete', async (id) => {
+  await api.delete(`/reports/${id}`);
+  return id;
+});
 
 const reportsSlice = createSlice({
   name: 'reports',
   initialState,
   reducers: {},
-  extraReducers: (b) => {
-    b
-      // fetch
-      .addCase(fetchReports.pending, (s) => { s.loading = true; s.error = null; })
-      .addCase(fetchReports.fulfilled, (s, a) => {
-        s.loading = false;
-        s.items = a.payload.items || [];
-        s.page = a.payload.page || 1;
-        s.totalPages = a.payload.totalPages || 1;
-        s.totalItems = a.payload.totalItems ?? s.items.length;
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchReports.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
-      .addCase(fetchReports.rejected, (s, a) => { s.loading = false; s.error = a.error.message || 'Failed to fetch'; })
-
-      // create
-      .addCase(createReport.fulfilled, (s, a) => {
-        s.items = [a.payload, ...s.items];
-        s.totalItems += 1;
+      .addCase(fetchReports.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.items || [];
+        state.page = action.payload.page || 1;
+        state.totalPages = action.payload.totalPages || 1;
+        state.totalItems = action.payload.totalItems ?? state.items.length;
       })
-      .addCase(createReport.rejected, (s, a) => { s.error = a.error.message || 'Create failed'; })
-
-      // update
-      .addCase(updateReport.fulfilled, (s, a) => {
-        const idx = s.items.findIndex(r => r.id === a.payload.id);
-        if (idx !== -1) s.items[idx] = a.payload;
+      .addCase(fetchReports.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch';
       })
-      .addCase(updateReport.rejected, (s, a) => { s.error = a.error.message || 'Update failed'; })
-
-      // delete
-      .addCase(deleteReport.fulfilled, (s, a) => {
-        s.items = s.items.filter(r => r.id !== a.payload);
-        s.totalItems = Math.max(0, s.totalItems - 1);
+      .addCase(createReport.fulfilled, (state, action) => {
+        state.items = [action.payload, ...state.items];
+        state.totalItems += 1;
       })
-      .addCase(deleteReport.rejected, (s, a) => { s.error = a.error.message || 'Delete failed'; });
-  }
+      .addCase(createReport.rejected, (state, action) => {
+        state.error = action.error.message || 'Create failed';
+      })
+      .addCase(updateReport.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((report) => report.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      })
+      .addCase(updateReport.rejected, (state, action) => {
+        state.error = action.error.message || 'Update failed';
+      })
+      .addCase(deleteReport.fulfilled, (state, action) => {
+        state.items = state.items.filter((report) => report.id !== action.payload);
+        state.totalItems = Math.max(0, state.totalItems - 1);
+      })
+      .addCase(deleteReport.rejected, (state, action) => {
+        state.error = action.error.message || 'Delete failed';
+      });
+  },
 });
 
 export default reportsSlice.reducer;
-=======
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import API from "../../api/api";
-
-export const createReport = createAsyncThunk("reports/create", async (payload) => {
-  const r = await API.post("/reports/", payload);
-  return r.data;
-});
-export const fetchReports = createAsyncThunk("reports/fetch", async (params) => {
-  const r = await API.get("/reports/", { params });
-  return r.data;
-});
-
-const slice = createSlice({
-  name: "reports",
-  initialState: { items: [], meta: null, status: "idle" },
-  reducers: {},
-  extraReducers: builder => {
-    builder.addCase(createReport.fulfilled, (state, action) => {
-      state.items.unshift(action.payload);
-    });
-    builder.addCase(fetchReports.fulfilled, (state, action) => {
-      state.items = action.payload.data;
-      state.meta = action.payload.meta;
-    });
-  }
-});
-export default slice.reducer;
->>>>>>> develop
