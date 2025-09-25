@@ -1,11 +1,14 @@
-// src/app/store.js
 import { configureStore } from '@reduxjs/toolkit';
-import reportReducer from '../features/reports/reportSlice';
+import authReducer from '../features/auth/authSlice';
+import reportsReducer from '../features/reports/reportsSlice';
+import adminReportsReducer from '../features/adminReports/adminReportsSlice';
 
 export const store = configureStore({
   reducer: {
-    reports: reportReducer,
+    auth: authReducer,
+    reports: reportsReducer,
+    adminReports: adminReportsReducer,
   },
 });
 
-export default store;
+export const AppDispatch = store.dispatch;

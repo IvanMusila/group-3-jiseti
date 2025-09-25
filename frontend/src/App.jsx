@@ -1,28 +1,83 @@
-import { useEffect, useState } from "react";
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import HomePage from "./pages/HomePage";
-import CreateReport from "./features/reports/CreateReport";
-import ReportsList from "./features/reports/ReportsList";
-// import RequireAuth from './features/auth/RequireAuth';
+import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import ReportList from './features/reports/components/ReportList';
+import ReportForm from './features/reports/components/ReportForm';
+import AdminReportsOverview from './features/adminReports/components/AdminReportsOverview';
+import AdminReportDetail from './features/adminReports/components/AdminReportDetail';
+import AdminGuard from './features/adminReports/components/AdminGuard';
+import { useIsAdmin } from './features/adminReports/hooks/useIsAdmin';
+import './App.css';
 
 export default function App() {
-  const [status, setStatus] = useState("Loading...");
-
-  useEffect(() => {
-    fetch("https://jiseti-backend-zt8g.onrender.com/api/health")
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus("Error connecting to backend"));
-  }, []);
+  const isAdmin = useIsAdmin();
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/" element={<HomePage />} />
-    </Routes>
+    <BrowserRouter>
+      <div className="app-shell">
+        <header className="app-header">
+          <span className="app-logo">Jiseti</span>
+          <nav className="app-nav">
+            <NavLink
+              to="/reports"
+              className={({ isActive }) =>
+                `app-link ${isActive ? 'app-link--active' : ''}`
+              }
+            >
+              Reports
+            </NavLink>
+            <NavLink
+              to="/reports/new"
+              className={({ isActive }) =>
+                `app-link app-link--primary ${isActive ? 'app-link--active' : ''}`
+              }
+            >
+              New Report
+            </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/admin/reports"
+                className={({ isActive }) =>
+                  `app-link ${isActive ? 'app-link--active' : ''}`
+                }
+              >
+                Admin
+              </NavLink>
+            )}
+          </nav>
+        </header>
+        <main className="app-main">
+          <div className="app-main__content">
+            <Routes>
+              <Route path="/reports" element={<ReportList />} />
+              <Route path="/reports/new" element={<ReportForm mode="create" />} />
+              <Route path="/reports/:id/edit" element={<ReportForm mode="edit" />} />
+              <Route
+                path="/admin/reports"
+                element={
+                  <AdminGuard>
+                    <AdminReportsOverview />
+                  </AdminGuard>
+                }
+              />
+              <Route
+                path="/admin/reports/:id"
+                element={
+                  <AdminGuard>
+                    <AdminReportDetail />
+                  </AdminGuard>
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <div className="app-empty">
+                    Go to <NavLink to="/reports">Reports</NavLink>
+                  </div>
+                }
+              />
+            </Routes>
+          </div>
+        </main>
+      </div>
+    </BrowserRouter>
   );
 }
