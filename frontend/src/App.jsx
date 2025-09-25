@@ -1,6 +1,4 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import ReportList from './features/reports/components/ReportList';
-import ReportForm from './features/reports/components/ReportForm';
 import AdminReportsOverview from './features/adminReports/components/AdminReportsOverview';
 import AdminReportDetail from './features/adminReports/components/AdminReportDetail';
 import AdminGuard from './features/adminReports/components/AdminGuard';
@@ -47,9 +45,6 @@ export default function App() {
         <main className="app-main">
           <div className="app-main__content">
             <Routes>
-              <Route path="/reports" element={<ReportList />} />
-              <Route path="/reports/new" element={<ReportForm mode="create" />} />
-              <Route path="/reports/:id/edit" element={<ReportForm mode="edit" />} />
               <Route
                 path="/admin/reports"
                 element={
