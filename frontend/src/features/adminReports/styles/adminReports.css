@@ -162,7 +162,7 @@
 .admin-table__head,
 .admin-row {
   display: grid;
-  grid-template-columns: minmax(220px, 3fr) repeat(4, minmax(110px, 1fr)) 32px;
+  grid-template-columns: minmax(220px, 3fr) repeat(5, minmax(110px, 1fr)) 32px;
   align-items: center;
   gap: 1.25rem;
 }

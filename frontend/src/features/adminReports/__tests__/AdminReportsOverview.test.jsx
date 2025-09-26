@@ -1,11 +1,13 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
 import adminReportsReducer from '../adminReportsSlice';
 import AdminReportsOverview from '../components/AdminReportsOverview';
+
+const server = globalThis.mswServer;
+const http = globalThis.mswHttp;
+const HttpResponse = globalThis.mswHttpResponse;
 
 const seed = [
   {
@@ -17,6 +19,7 @@ const seed = [
     createdBy: 10,
     createdAt: '2024-07-01T10:00:00.000Z',
     updatedAt: '2024-07-01T10:00:00.000Z',
+    assignedTo: 'ops-team',
   },
   {
     id: 2,
@@ -27,32 +30,34 @@ const seed = [
     createdBy: 4,
     createdAt: '2024-06-28T08:00:00.000Z',
     updatedAt: '2024-06-30T09:00:00.000Z',
+    assignedTo: null,
   },
 ];
 
 let reports = [...seed];
 
-const server = setupServer(
-  http.get('/reports', ({ request }) => {
-    const url = new URL(request.url);
-    const status = url.searchParams.get('status');
-    const filtered = status ? reports.filter((item) => item.status === status) : reports;
-    return HttpResponse.json({ items: filtered, page: 1, totalPages: 1, totalItems: filtered.length });
-  })
-);
-
-beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
-afterEach(() => {
-  server.resetHandlers();
+beforeEach(() => {
   reports = [...seed];
+  server.use(
+    http.get('/reports', ({ request }) => {
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      const assigned = url.searchParams.get('assigned');
+      const filtered = reports.filter((item) => {
+        const statusMatch = status ? item.status === status : true;
+        const assignedMatch = assigned ? String(item.assignedTo) === assigned : true;
+        return statusMatch && assignedMatch;
+      });
+      return HttpResponse.json({ items: filtered, page: 1, totalPages: 1, totalItems: filtered.length });
+    })
+  );
 });
-afterAll(() => server.close());
 
 function renderPage() {
   const store = configureStore({ reducer: { adminReports: adminReportsReducer } });
   return render(
     <Provider store={store}>
-      <MemoryRouter initialEntries={[{ pathname: '/admin/reports' }] }>
+      <MemoryRouter initialEntries={[{ pathname: '/admin/reports' }]}>
         <AdminReportsOverview />
       </MemoryRouter>
     </Provider>
@@ -62,9 +67,10 @@ function renderPage() {
 test('renders admin report overview list', async () => {
   renderPage();
 
-  expect(await screen.findByText(/Collapsed Bridge/)).toBeInTheDocument();
+  await screen.findByText(/Collapsed Bridge/);
   expect(screen.getByText(/Total Reports/i)).toBeInTheDocument();
   expect(screen.getByLabelText(/Status/i)).toBeInTheDocument();
+  expect(screen.getAllByText(/Operations Team/).length).toBeGreaterThan(0);
 });
 
 test('applies status filter', async () => {
@@ -77,5 +83,18 @@ test('applies status filter', async () => {
   await waitFor(() => {
     expect(screen.getByText(/Procurement Fraud/)).toBeInTheDocument();
     expect(screen.queryByText(/Collapsed Bridge/)).not.toBeInTheDocument();
+  });
+});
+
+test('filters by assignment', async () => {
+  renderPage();
+
+  await screen.findByText(/Collapsed Bridge/);
+
+  fireEvent.change(screen.getByLabelText(/Assigned/i), { target: { value: 'ops-team' } });
+
+  await waitFor(() => {
+    expect(screen.getByText(/Collapsed Bridge/)).toBeInTheDocument();
+    expect(screen.queryByText(/Procurement Fraud/)).not.toBeInTheDocument();
   });
 });

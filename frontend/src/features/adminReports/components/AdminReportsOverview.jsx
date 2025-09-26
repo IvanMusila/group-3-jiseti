@@ -7,14 +7,17 @@ import {
   selectAdminReportsState,
   setAdminFilters,
 } from '../adminReportsSlice';
+import {
+  ADMIN_ASSIGNEE_OPTIONS,
+  STATUS_LABELS,
+  assigneeLabel,
+  statusLabel,
+} from '../config';
 import '../styles/adminReports.css';
 
 const statusOptions = [
   { label: 'All statuses', value: '' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Under Investigation', value: 'under-investigation' },
-  { label: 'Rejected', value: 'rejected' },
-  { label: 'Resolved', value: 'resolved' },
+  ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ label, value })),
 ];
 
 const typeOptions = [
@@ -42,11 +45,11 @@ function formatDate(value) {
 export default function AdminReportsOverview() {
   const dispatch = useDispatch();
   const { items, page, totalPages, totalItems, loading, error, filters } = useSelector(selectAdminReportsState);
-  const { status, type, search, sort } = filters;
+  const { status, type, search, sort, assigned, dateFrom, dateTo } = filters;
 
   useEffect(() => {
     dispatch(fetchAdminReports({ page, filters }));
-  }, [dispatch, page, status, type, search, sort, filters.limit]);
+  }, [dispatch, page, status, type, search, sort, filters.limit, assigned, dateFrom, dateTo]);
 
   const summary = useMemo(() => ({
     pending: items.filter((r) => r.status === 'pending').length,
@@ -132,6 +135,20 @@ export default function AdminReportsOverview() {
           </select>
         </div>
         <div className="admin-filter">
+          <label htmlFor="admin-assigned">Assigned</label>
+          <select
+            id="admin-assigned"
+            value={assigned}
+            onChange={(event) => updateFilter('assigned', event.target.value)}
+          >
+            {ADMIN_ASSIGNEE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="admin-filter">
           <label htmlFor="admin-sort">Sort</label>
           <select
             id="admin-sort"
@@ -144,6 +161,24 @@ export default function AdminReportsOverview() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="admin-filter">
+          <label htmlFor="admin-from">From</label>
+          <input
+            id="admin-from"
+            type="date"
+            value={dateFrom}
+            onChange={(event) => updateFilter('dateFrom', event.target.value)}
+          />
+        </div>
+        <div className="admin-filter">
+          <label htmlFor="admin-to">To</label>
+          <input
+            id="admin-to"
+            type="date"
+            value={dateTo}
+            onChange={(event) => updateFilter('dateTo', event.target.value)}
+          />
         </div>
         <div className="admin-filter admin-filter--actions">
           <button type="submit" className="admin-action admin-action--primary">
@@ -173,10 +208,11 @@ export default function AdminReportsOverview() {
         {!loading && items.length > 0 && (
           <div className="admin-table">
             <div className="admin-table__head">
-              <span>Title</span>
+              <span>Report</span>
               <span>Status</span>
               <span>Type</span>
               <span>Reporter</span>
+              <span>Assigned</span>
               <span>Submitted</span>
             </div>
             <div className="admin-table__body">
@@ -188,13 +224,16 @@ export default function AdminReportsOverview() {
                 >
                   <div className="admin-row__title">
                     <h3>{report.title}</h3>
-                    <p>{report.description?.slice(0, 80) || 'No description provided.'}</p>
+                    <p>
+                      #{report.id} · {report.description?.slice(0, 80) || 'No description provided.'}
+                    </p>
                   </div>
                   <span className={`admin-status admin-status--${report.status}`}>
-                    {report.status?.replace('-', ' ') || 'unknown'}
+                    {statusLabel(report.status)}
                   </span>
                   <span className="admin-badge">{report.type}</span>
                   <span className="admin-meta">User #{report.createdBy ?? '—'}</span>
+                  <span className="admin-meta">{assigneeLabel(report.assignedTo)}</span>
                   <span className="admin-meta">{formatDate(report.createdAt)}</span>
                   <span className="admin-row__chevron" aria-hidden>→</span>
                 </Link>

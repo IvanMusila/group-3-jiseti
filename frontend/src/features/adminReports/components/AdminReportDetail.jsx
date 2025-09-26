@@ -2,22 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  assignReport,
   fetchAdminReportById,
   selectAdminReportById,
   selectAdminReportsState,
   updateReportStatus,
 } from '../adminReportsSlice';
+import {
+  ADMIN_ASSIGNMENT_CHOICES,
+  STATUS_ACTIONS,
+  allowedStatusTargets,
+  assigneeLabel,
+  statusLabel,
+} from '../config';
 import '../styles/adminReports.css';
-
-const STATUS_OPTIONS = [
-  { value: 'under-investigation', label: 'Mark Under Investigation' },
-  { value: 'rejected', label: 'Reject Report' },
-  { value: 'resolved', label: 'Mark as Resolved' },
-];
-
-function prettyStatus(status) {
-  return status ? status.replace(/-/g, ' ') : 'unknown';
-}
 
 function formatDate(value) {
   if (!value) return '—';
@@ -36,15 +34,23 @@ export default function AdminReportDetail() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const report = useSelector((state) => selectAdminReportById(state, numericId));
-  const { currentLoading, loading, error } = useSelector(selectAdminReportsState);
-  const [note, setNote] = useState('');
-  const [saving, setSaving] = useState(false);
+  const { currentLoading, loading, error, actionLoading, actionError } = useSelector(selectAdminReportsState);
+  const [statusNote, setStatusNote] = useState('');
+  const [assignmentNote, setAssignmentNote] = useState('');
+  const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
     if (!Number.isNaN(numericId) && !report) {
       dispatch(fetchAdminReportById(numericId));
     }
   }, [dispatch, numericId, report]);
+
+  useEffect(() => {
+    if (report) {
+      setSelectedAssignee(report.assignedTo || '');
+    }
+  }, [report?.assignedTo]);
 
   const isLoading = (!report && (loading || currentLoading));
 
@@ -69,16 +75,62 @@ export default function AdminReportDetail() {
     return 'Not provided';
   }, [report]);
 
+  const allowedTargets = useMemo(
+    () => (report ? allowedStatusTargets(report.status) : []),
+    [report?.status]
+  );
+
+  const timeline = useMemo(() => {
+    if (report?.history?.length) return report.history;
+    if (!report?.moderationNotes) return [];
+    return report.moderationNotes.map((entry) => ({
+      id: entry.id,
+      type: 'note',
+      createdAt: entry.createdAt,
+      status: entry.status,
+      note: entry.note,
+    }));
+  }, [report]);
+
   const handleStatusUpdate = async (statusValue) => {
     if (!report) return;
+    const payloadNote = statusNote.trim();
     try {
-      setSaving(true);
-      await dispatch(updateReportStatus({ id: report.id, status: statusValue, note })).unwrap();
-      setNote('');
+      setPendingAction(`status-${statusValue}`);
+      await dispatch(
+        updateReportStatus({
+          id: report.id,
+          status: statusValue,
+          note: payloadNote || undefined,
+        })
+      ).unwrap();
+      const actionConfig = STATUS_ACTIONS.find((option) => option.value === statusValue);
+      if (actionConfig?.requiresNote) {
+        setStatusNote('');
+      }
     } catch (err) {
       // error handled via slice state
     } finally {
-      setSaving(false);
+      setPendingAction(null);
+    }
+  };
+
+  const handleAssignment = async () => {
+    if (!report) return;
+    try {
+      setPendingAction('assign');
+      await dispatch(
+        assignReport({
+          id: report.id,
+          assignedTo: selectedAssignee || null,
+          note: assignmentNote.trim() || undefined,
+        })
+      ).unwrap();
+      setAssignmentNote('');
+    } catch (err) {
+      // handled in slice
+    } finally {
+      setPendingAction(null);
     }
   };
 
@@ -124,7 +176,7 @@ export default function AdminReportDetail() {
         </div>
         <div className="admin-detail__status">
           <span className={`admin-status admin-status--${report.status}`}>
-            {prettyStatus(report.status)}
+            {statusLabel(report.status)}
           </span>
           <span className="admin-badge">{report.type}</span>
         </div>
@@ -150,6 +202,10 @@ export default function AdminReportDetail() {
               <dt>Location</dt>
               <dd>{locationLabel}</dd>
             </div>
+            <div>
+              <dt>Assigned to</dt>
+              <dd>{assigneeLabel(report.assignedTo)}</dd>
+            </div>
           </dl>
 
           <div className="admin-map-preview">
@@ -162,33 +218,76 @@ export default function AdminReportDetail() {
         <article className="admin-detail__card admin-detail__card--actions">
           <h2>Moderation</h2>
           <label className="admin-filter">
-            Moderation note (optional)
+            Moderation note
             <textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
+              value={statusNote}
+              onChange={(event) => setStatusNote(event.target.value)}
               placeholder="Add context for the status update"
               rows={4}
             />
           </label>
 
           <div className="admin-actions">
-            {STATUS_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className="admin-action admin-action--primary"
-                disabled={saving}
-                onClick={() => handleStatusUpdate(option.value)}
-              >
-                {saving ? 'Updating…' : option.label}
-              </button>
-            ))}
+            {STATUS_ACTIONS.map((option) => {
+              const requiresNote = option.requiresNote;
+              const allowed = allowedTargets.includes(option.value);
+              const noteRequiredMissing = requiresNote && !statusNote.trim();
+              const isPending = pendingAction === `status-${option.value}` && actionLoading;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className="admin-action admin-action--primary"
+                  disabled={!allowed || noteRequiredMissing || actionLoading}
+                  onClick={() => handleStatusUpdate(option.value)}
+                >
+                  {isPending ? 'Updating…' : option.label}
+                </button>
+              );
+            })}
           </div>
-          {error && (
-            <div className="admin-error" role="alert">
-              {error}
-            </div>
+
+          {allowedTargets.length === 0 && (
+            <p className="admin-meta">Report has reached a final state.</p>
           )}
+        </article>
+
+        <article className="admin-detail__card admin-detail__card--actions">
+          <h2>Assignment</h2>
+          <label className="admin-filter">
+            Assign to
+            <select
+              value={selectedAssignee}
+              onChange={(event) => setSelectedAssignee(event.target.value)}
+            >
+              {ADMIN_ASSIGNMENT_CHOICES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="admin-filter">
+            Assignment note (optional)
+            <textarea
+              value={assignmentNote}
+              onChange={(event) => setAssignmentNote(event.target.value)}
+              rows={3}
+              placeholder="Let colleagues know why you reassigned this report"
+            />
+          </label>
+
+          <div className="admin-actions">
+            <button
+              type="button"
+              className="admin-action admin-action--primary"
+              disabled={actionLoading}
+              onClick={handleAssignment}
+            >
+              {pendingAction === 'assign' && actionLoading ? 'Saving…' : 'Update assignment'}
+            </button>
+          </div>
         </article>
       </div>
 
@@ -212,23 +311,37 @@ export default function AdminReportDetail() {
       </article>
 
       <article className="admin-detail__card">
-        <h2>Moderation Notes</h2>
-        {report.moderationNotes?.length ? (
+        <h2>Activity Timeline</h2>
+        {timeline.length ? (
           <ul className="admin-notes">
-            {report.moderationNotes.map((entry) => (
+            {timeline.map((entry) => (
               <li key={entry.id}>
                 <div>
                   <strong>{formatDate(entry.createdAt)}</strong>
-                  <span>Status: {prettyStatus(entry.status)}</span>
+                  <span>{entry.type === 'assignment' ? 'Assignment' : statusLabel(entry.status)}</span>
                 </div>
-                <p>{entry.note}</p>
+                {entry.note && <p>{entry.note}</p>}
+                {entry.assignedTo && (
+                  <p className="admin-meta">Assigned to: {assigneeLabel(entry.assignedTo)}</p>
+                )}
+                {entry.from && (
+                  <p className="admin-meta">
+                    {statusLabel(entry.from)} → {statusLabel(entry.status)}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="admin-empty">No moderation notes yet.</p>
+          <p className="admin-empty">No activity yet.</p>
         )}
       </article>
+
+      {actionError && (
+        <div className="admin-error" role="alert">
+          {actionError}
+        </div>
+      )}
     </section>
   );
 }

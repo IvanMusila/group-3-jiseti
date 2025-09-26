@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: "jsdom",
+  setupFiles: ["<rootDir>/src/test/jestPolyfills.cjs"],
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.js"],
   moduleNameMapper: {
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",

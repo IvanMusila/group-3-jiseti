@@ -6,6 +6,9 @@ const initialFilters = {
   type: '',
   search: '',
   sort: 'newest',
+  assigned: '',
+  dateFrom: '',
+  dateTo: '',
   limit: 10,
 };
 
@@ -19,6 +22,8 @@ const initialState = {
   filters: initialFilters,
   current: null,
   currentLoading: false,
+  actionError: null,
+  actionLoading: false,
 };
 
 function buildQuery({ page = 1, filters = {} }) {
@@ -28,6 +33,9 @@ function buildQuery({ page = 1, filters = {} }) {
   if (filters.status) params.set('status', filters.status);
   if (filters.type) params.set('type', filters.type);
   if (filters.search) params.set('search', filters.search);
+  if (filters.assigned) params.set('assigned', filters.assigned);
+  if (filters.dateFrom) params.set('from', filters.dateFrom);
+  if (filters.dateTo) params.set('to', filters.dateTo);
   return params.toString();
 }
 
@@ -57,6 +65,15 @@ export const updateReportStatus = createAsyncThunk(
   'adminReports/updateStatus',
   async ({ id, status, note }) => {
     const payload = note ? { status, note } : { status };
+    const { data } = await api.put(`/reports/${id}`, payload);
+    return data;
+  }
+);
+
+export const assignReport = createAsyncThunk(
+  'adminReports/assignReport',
+  async ({ id, assignedTo, note }) => {
+    const payload = note ? { assignedTo, note } : { assignedTo };
     const { data } = await api.put(`/reports/${id}`, payload);
     return data;
   }
@@ -110,7 +127,8 @@ const adminReportsSlice = createSlice({
         state.error = action.error.message || 'Failed to load reports';
       })
       .addCase(updateReportStatus.pending, (state) => {
-        state.error = null;
+        state.actionLoading = true;
+        state.actionError = null;
       })
       .addCase(updateReportStatus.fulfilled, (state, action) => {
         const idx = state.items.findIndex((item) => item.id === action.payload.id);
@@ -120,9 +138,29 @@ const adminReportsSlice = createSlice({
         if (state.current && state.current.id === action.payload.id) {
           state.current = action.payload;
         }
+        state.actionLoading = false;
       })
       .addCase(updateReportStatus.rejected, (state, action) => {
-        state.error = action.error.message || 'Failed to update report';
+        state.actionLoading = false;
+        state.actionError = action.error.message || 'Failed to update report';
+      })
+      .addCase(assignReport.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(assignReport.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((item) => item.id === action.payload.id);
+        if (idx !== -1) {
+          state.items[idx] = action.payload;
+        }
+        if (state.current && state.current.id === action.payload.id) {
+          state.current = action.payload;
+        }
+        state.actionLoading = false;
+      })
+      .addCase(assignReport.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.actionError = action.error.message || 'Failed to assign report';
       })
       .addCase(fetchAdminReportById.pending, (state) => {
         state.currentLoading = true;
