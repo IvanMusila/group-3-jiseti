@@ -40,16 +40,40 @@
 }
 
 .app-link--primary {
-  background: #1f2933;
-  color: #ffffff;
+  border: 1px solid #111827;
+  background: #ffffff;
+  color: #111827;
 }
 
 .app-link--primary:hover {
-  background: #111827;
+  border-color: #000000;
+  color: #000000;
+  background: #f8fafc;
+}
+
+.app-link--cta {
+  border: 1px solid #d1d5db;
+  color: #1f2933;
+  background: #ffffff;
+}
+
+.app-link--cta:hover {
+  border-color: #111827;
+  color: #111827;
 }
 
 .app-link--active {
   box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.2);
+}
+
+.app-link--active:not(.app-link--primary) {
+  background: #111827;
+  color: #ffffff;
+}
+
+.app-link--primary.app-link--active {
+  background: #111827;
+  color: #ffffff;
 }
 
 .app-main {
