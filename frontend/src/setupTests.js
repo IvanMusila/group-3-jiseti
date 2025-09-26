@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
-import { ReadableStream, WritableStream } from 'stream/web';
+import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
 import { BroadcastChannel } from 'worker_threads';
 
 const serverPromise = (async () => {
@@ -15,6 +15,9 @@ const serverPromise = (async () => {
   }
   if (!globalThis.WritableStream) {
     globalThis.WritableStream = WritableStream;
+  }
+  if (!globalThis.TransformStream) {
+    globalThis.TransformStream = TransformStream;
   }
   if (!globalThis.BroadcastChannel) {
     globalThis.BroadcastChannel = BroadcastChannel;

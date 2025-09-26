@@ -45,6 +45,6 @@ test('update blocked when status not pending', async () => {
   );
   const store = makeStore();
   await store.dispatch(fetchReports(1));
-  await expect(store.dispatch(updateReport({ id: 1, patch: { title: 'x' } })).unwrap())
-    .rejects.toThrow();
+  const result = await store.dispatch(updateReport({ id: 1, patch: { title: 'x' } }));
+  expect(result.meta.requestStatus).toBe('rejected');
 });
