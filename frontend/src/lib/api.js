@@ -1,7 +1,16 @@
 import axios from 'axios';
 
-// Call real backend when VITE_API_URL is set and VITE_USE_MSW !== 'true'
-const baseURL = import.meta.env.VITE_API_URL || '';
+function readImportMetaEnv() {
+  try {
+    // eslint-disable-next-line no-new-func
+    return new Function('return import.meta.env')();
+  } catch (error) {
+    return undefined;
+  }
+}
+
+const viteEnv = readImportMetaEnv() || {};
+const baseURL = viteEnv.VITE_API_URL || (typeof process !== 'undefined' ? process.env?.VITE_API_URL : '') || '';
 
 const api = axios.create({ baseURL });
 

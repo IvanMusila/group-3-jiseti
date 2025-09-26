@@ -1,0 +1,166 @@
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchReports, deleteReport } from '../reportsSlice';
+import { Link, useSearchParams } from 'react-router-dom';
+import { selectCurrentUserId, selectCurrentUserRole } from '../../auth/selectors';
+
+export default function ReportList() {
+  const dispatch = useDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedPage = Number(searchParams.get('page') || 1);
+  const { items, totalPages, totalItems, loading, error } = useSelector((state) => state.reports);
+
+  useEffect(() => {
+    dispatch(fetchReports(requestedPage));
+  }, [dispatch, requestedPage]);
+
+  const currentUserId = selectCurrentUserId();
+  const currentRole = selectCurrentUserRole();
+  const canModerate = currentRole === 'admin';
+
+  const canEditDelete = (report) =>
+    report.status === 'pending' && (report.createdBy === currentUserId || canModerate);
+
+  const handlePrev = () => setSearchParams({ page: String(Math.max(1, requestedPage - 1)) });
+  const handleNext = () => setSearchParams({ page: String(Math.min(totalPages, requestedPage + 1)) });
+
+  return (
+    <section className="space-y-8">
+      <header className="space-y-2">
+        <p className="text-sm uppercase tracking-widest text-gray-500">Community timeline</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900">Reports submitted</h1>
+            <p className="max-w-2xl text-sm text-gray-600">
+              Track progress on the concerns raised by neighbours. Admins can moderate pending
+              reports directly from here.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-yellow-950 shadow-md shadow-orange-200/40">
+            {totalItems} total
+          </div>
+        </div>
+      </header>
+
+      <div className="space-y-4">
+        {loading && (
+          <div className="rounded-2xl border border-dashed border-yellow-900/30 bg-white p-6 text-sm text-gray-600">
+            Loading reports…
+          </div>
+        )}
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && items.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-600">
+            No reports yet. Be the first to raise an issue in your neighbourhood.
+          </div>
+        )}
+
+        <ul className="space-y-3">
+          {items.map((report) => (
+            <li
+              key={report.id}
+              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-lg shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-semibold text-gray-900">{report.title}</h2>
+                  <p className="text-sm text-gray-600">{report.description}</p>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-yellow-900">
+                  {report.type?.replace('-', ' ') || 'Unknown type'}
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-widest text-gray-500">
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-700">
+                  Status: {report.status || 'pending'}
+                </span>
+                {report.location && (
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-700">
+                    {typeof report.location === 'string'
+                      ? report.location
+                      : `${report.location.lat}, ${report.location.lng}`}
+                  </span>
+                )}
+                {report.attachments?.length > 0 && (
+                  <span className="rounded-full bg-yellow-100 px-3 py-1 text-yellow-900">
+                    {report.attachments.length} attachment{report.attachments.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+
+              {canEditDelete(report) && (
+                <div className="mt-6 flex gap-3">
+                  <Link
+                    to={`/reports/${report.id}/edit`}
+                    className="inline-flex items-center justify-center rounded-xl border border-yellow-900 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-yellow-900 transition hover:bg-yellow-900 hover:text-white"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => dispatch(deleteReport(report.id))}
+                    className="inline-flex items-center justify-center rounded-xl border border-red-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-red-600 transition hover:bg-red-600 hover:text-white"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+
+              {report.attachments?.length > 0 && (
+                <ul className="mt-4 space-y-2 text-xs text-gray-600">
+                  {report.attachments.map((file, idx) => (
+                    <li
+                      key={`${file.url || file.name || idx}-${idx}`}
+                      className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2"
+                    >
+                      <span className="truncate pr-3">
+                        {file.name || `Attachment ${idx + 1}`}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-gray-400">
+                        {file.type?.split('/')[0] || 'file'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-2xl bg-white px-5 py-4 text-sm font-medium text-gray-700 shadow-lg shadow-slate-900/5">
+          <button
+            type="button"
+            onClick={handlePrev}
+            disabled={requestedPage <= 1}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2 transition hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Previous
+          </button>
+          <span>
+            Page {requestedPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={requestedPage >= totalPages}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2 transition hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
