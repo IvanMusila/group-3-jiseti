@@ -7,9 +7,17 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
-@auth_bp.route("/signup", methods=["POST"])
+@auth_bp.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
+@auth_bp.route("/register", methods=["POST"])
 def signup():
     data = request.get_json()
     username = data.get("username")
@@ -44,7 +52,7 @@ def login():
         access_token = create_access_token(identity=str(user.id))
         return jsonify({
             "msg": "Login successful",
-            "token": access_token,
+            "access_token": access_token,
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -55,7 +63,7 @@ def login():
 
     return jsonify({"error": "Invalid credentials"}), 401
 
-@auth_bp.route("/profile", methods=["GET"])
+@auth_bp.route("/me", methods=["GET"])
 @jwt_required()
 def profile():
     try:
