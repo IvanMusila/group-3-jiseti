@@ -11,14 +11,17 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 @auth_bp.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+    response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:3000')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response
 
-@auth_bp.route("/register", methods=["POST"])
+@auth_bp.route("/register", methods=["POST","OPTIONS"])
 def signup():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
     data = request.get_json()
     username = data.get("username")
     email = data.get("email")
@@ -37,8 +40,11 @@ def signup():
 
     return jsonify({"msg": "User created successfully"}), 201
 
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route("/login", methods=["POST", "OPTIONS"])
 def login():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")

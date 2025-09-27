@@ -5,14 +5,14 @@ import { store } from './app/store';
 import App from './App';
 import './index.css';
 
-async function enableMocks() {
-  if (import.meta.env.VITE_USE_MSW === 'true') {
-    const { worker } = await import('./mocks/browser');
-    await worker.start({ onUnhandledRequest: 'bypass' });
-  }
-}
+// async function enableMocks() {
+//   if (import.meta.env.VITE_USE_MSW === 'true') {
+//     const { worker } = await import('./mocks/browser');
+//     await worker.start({ onUnhandledRequest: 'bypass' });
+//   }
+// }
 
-enableMocks();
+// enableMocks();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
