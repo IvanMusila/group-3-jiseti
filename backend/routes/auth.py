@@ -3,9 +3,9 @@ from backend.app import db
 from backend.models.user import User
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
+auth_bp = Blueprint("auth", __name__)
 
-# ✅ Preflight OPTIONS handler
+# ✅ Explicit OPTIONS handler (so Render doesn’t 404 preflight)
 @auth_bp.route("/register", methods=["OPTIONS"])
 @auth_bp.route("/login", methods=["OPTIONS"])
 def handle_options():
@@ -30,3 +30,42 @@ def signup():
     db.session.commit()
 
     return jsonify({"msg": "User created successfully"}), 201
+
+@auth_bp.route("/login", methods=["POST"])
+def login():
+    data = request.get_json() or {}
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Missing email or password"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user and user.check_password(password):
+        token = create_access_token(identity=str(user.id))
+        return jsonify({
+            "msg": "Login successful",
+            "access_token": token,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role
+            }
+        }), 200
+
+    return jsonify({"error": "Invalid credentials"}), 401
+
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required()
+def profile():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role
+    }), 200
