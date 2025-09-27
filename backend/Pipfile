@@ -5,10 +5,12 @@ name = "pypi"
 
 [packages]
 flask = "*"
+psycopg2-binary = "*"
+dotenv = "*"
+python-dotenv = "*"
+flask-cors = "*"
 flask-sqlalchemy = "*"
 flask-migrate = "*"
-psycopg2-binary = "*"
-python-dotenv = "*"
 flask-jwt-extended = "*"
 
 [dev-packages]

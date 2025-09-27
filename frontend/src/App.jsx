@@ -1,21 +1,106 @@
-import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, NavLink, Outlet, useLocation } from 'react-router-dom';
+import AdminReportsOverview from './features/adminReports/components/AdminReportsOverview';
+import AdminReportDetail from './features/adminReports/components/AdminReportDetail';
+import AdminGuard from './features/adminReports/components/AdminGuard';
+import ReportList from './features/reports/components/ReportList';
+import ReportForm from './features/reports/components/ReportForm';
+import { useIsAdmin } from './features/adminReports/hooks/useIsAdmin';
+import HomePage from './pages/HomePage';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import './App.css';
 
-function App() {
-  const [status, setStatus] = useState("Loading...");
+function AppLayout() {
+  const location = useLocation();
+  const isAdmin = useIsAdmin();
+  const hideChromeFor = new Set(['/', '/login', '/signup']);
 
-  useEffect(() => {
-    fetch("https://jiseti-backend-zt8g.onrender.com/api/health")
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus("Error connecting to backend"));
-  }, []);
+  if (hideChromeFor.has(location.pathname)) {
+    return <Outlet />;
+  }
+
+  const baseLinkClass = ({ isActive }) => `app-link ${isActive ? 'app-link--active' : ''}`;
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>Jiseti Frontend</h1>
-      <p>Backend Status: {status}</p>
+    <div className="app-shell">
+      <header className="app-header">
+        <span className="app-logo">Jiseti</span>
+        <nav className="app-nav">
+          <NavLink to="/" end className={baseLinkClass}>
+            Home
+          </NavLink>
+          <NavLink to="/reports" className={baseLinkClass}>
+            Reports
+          </NavLink>
+          <NavLink
+            to="/reports/new"
+            className={({ isActive }) =>
+              `app-link app-link--primary ${isActive ? 'app-link--active' : ''}`
+            }
+          >
+            New Report
+          </NavLink>
+          {isAdmin && (
+            <NavLink to="/admin/reports" className={baseLinkClass}>
+              Admin
+            </NavLink>
+          )}
+          <NavLink to="/login" className={baseLinkClass}>
+            Login
+          </NavLink>
+          <NavLink to="/signup" className={baseLinkClass}>
+            Sign Up
+          </NavLink>
+        </nav>
+      </header>
+      <main className="app-main">
+        <div className="app-main__content">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 }
 
-export default App;
+function NotFound() {
+  return (
+    <div className="app-empty">
+      <h2>Page not found</h2>
+      <p>Try one of the navigation links above.</p>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="reports" element={<ReportList />} />
+          <Route path="reports/new" element={<ReportForm mode="create" />} />
+          <Route path="reports/:id/edit" element={<ReportForm mode="edit" />} />
+          <Route
+            path="admin/reports"
+            element={
+              <AdminGuard>
+                <AdminReportsOverview />
+              </AdminGuard>
+            }
+          />
+          <Route
+            path="admin/reports/:id"
+            element={
+              <AdminGuard>
+                <AdminReportDetail />
+              </AdminGuard>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
