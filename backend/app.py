@@ -28,23 +28,12 @@ def create_app(testing=False):
          methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          allow_headers=["Content-Type", "Authorization", "X-Requested-With"])
 
-    # Init extensions
     db.init_app(app)
     jwt.init_app(app)
     
-    # CREATE AUTH ROUTES DIRECTLY IN APP.PY (no import needed)
     auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
     
-    # Manual CORS headers for auth routes
-    @auth_bp.after_request
-    def after_request(response):
-        response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:3000')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
     
-    # EXPLICIT OPTIONS HANDLERS
     @auth_bp.route("/register", methods=["OPTIONS"])
     @auth_bp.route("/login", methods=["OPTIONS"])
     def handle_options():
