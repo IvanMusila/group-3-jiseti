@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import os
+import re
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -10,8 +11,14 @@ jwt = JWTManager()
 def create_app():
     app = Flask(__name__)
 
-    # Config
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db")
+    # Config - Fix database URL for Python 3.13 compatibility
+    database_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
+    
+    # If using PostgreSQL, force psycopg3
+    if database_url.startswith('postgresql://'):
+        database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
 
@@ -41,7 +48,7 @@ def create_app():
 
     return app
 
-# For local runs (Render uses wsgi.py)
+# For local runs
 if __name__ == "__main__":
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
