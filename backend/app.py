@@ -34,7 +34,7 @@ def create_app():
     jwt.init_app(app)
 
     # Register blueprints
-    from backend.routes.auth import auth_bp
+    from routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
 
     # Health check
@@ -52,3 +52,4 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
+
