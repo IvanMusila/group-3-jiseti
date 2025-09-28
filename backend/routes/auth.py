@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
-from backend.app import db
-from backend.models.user import User
+from app import db  # Changed from 'backend.app'
+from models.user import User  # Changed from 'backend.models.user'
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 auth_bp = Blueprint("auth", __name__)
 
-# ✅ Explicit OPTIONS handler (so Render doesn’t 404 preflight)
+# ✅ Explicit OPTIONS handler
 @auth_bp.route("/register", methods=["OPTIONS"])
 @auth_bp.route("/login", methods=["OPTIONS"])
 def handle_options():
