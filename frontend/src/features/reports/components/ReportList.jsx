@@ -8,24 +8,29 @@ export default function ReportList() {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get('page') || 1);
-  const { items, totalPages, totalItems, loading, error } = useSelector((state) => state.reports);
+  const { items, totalPages, totalItems, loading, error } = useSelector((state) => state.reports || {});
+
+
+  const currentUserId = useSelector(selectCurrentUserId);
+  const currentRole = useSelector(selectCurrentUserRole);
+  const canModerate = currentRole === 'admin';
+
+  const canEditDelete = (report) =>
+    report?.status === 'pending' && (report?.createdBy === currentUserId || canModerate);
 
   useEffect(() => {
     dispatch(fetchReports(requestedPage));
   }, [dispatch, requestedPage]);
 
-  const currentUserId = selectCurrentUserId();
-  const currentRole = selectCurrentUserRole();
-  const canModerate = currentRole === 'admin';
-
-  const canEditDelete = (report) =>
-    report.status === 'pending' && (report.createdBy === currentUserId || canModerate);
-
   const handlePrev = () => setSearchParams({ page: String(Math.max(1, requestedPage - 1)) });
   const handleNext = () => setSearchParams({ page: String(Math.min(totalPages, requestedPage + 1)) });
 
+  if (loading) {
+    return <div>Loading reports...</div>;
+  }
+
   return (
-    <section className="space-y-8">
+    <section className="space-y-8"> 
       <header className="space-y-2">
         <p className="text-sm uppercase tracking-widest text-gray-500">Community timeline</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -65,15 +70,15 @@ export default function ReportList() {
         )}
 
         <ul className="space-y-3">
-          {items.map((report) => (
+          {items?.map((report) => (
             <li
-              key={report.id}
+              key={report?.id}
               className="rounded-3xl border border-gray-200 bg-white p-6 shadow-lg shadow-slate-900/5 transition hover:-translate-y-1 hover:shadow-xl"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-1">
-                  <h2 className="text-xl font-semibold text-gray-900">{report.title}</h2>
-                  <p className="text-sm text-gray-600">{report.description}</p>
+                  <h2 className="text-xl font-semibold text-gray-900">{report?.title}</h2>
+                  <p className="text-sm text-gray-600">{report?.description}</p>
                 </div>
                 <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-yellow-900">
                   {report.type?.replace('-', ' ') || 'Unknown type'}

@@ -4,15 +4,17 @@ from flask_cors import CORS
 from models import db, User  # Import User from models
 import os
 import re
+import logging
+import traceback
 
-# Remove this duplicate db initialization
-# db = SQLAlchemy()  # ❌ DELETE THIS LINE
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
 
-    # Config - Fix database URL for Python 3.13 compatibility
     database_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
     
     # If using PostgreSQL, force psycopg3
@@ -37,25 +39,15 @@ def create_app():
     # CREATE AUTH BLUEPRINT DIRECTLY (no import needed)
     auth_bp = Blueprint("auth", __name__)
     
-    # ❌ DELETE THIS DUPLICATE USER MODEL (lines 38-51)
-    # class User(db.Model):
-    #     id = db.Column(db.Integer, primary_key=True)
-    #     username = db.Column(db.String(80), unique=True, nullable=False)
-    #     email = db.Column(db.String(120), unique=True, nullable=False)
-    #     password = db.Column(db.String(120), nullable=False)
-    #     role = db.Column(db.String(20), default='user')
-    #     
-    #     def to_dict(self):
-    #         return {
-    #             "id": self.id,
-    #             "username": self.username,
-    #             "email": self.email,
-    #             "role": self.role
-    #         }
-    
+
     # Create tables
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+            logger.info("✅ Database tables created successfully")
+        except Exception as e:
+            logger.error(f"❌ Database creation error: {str(e)}")
+            logger.error(traceback.format_exc())
     
     # OPTIONS handlers for CORS preflight
     @auth_bp.route("/register", methods=["OPTIONS"])
@@ -68,29 +60,40 @@ def create_app():
     def register():
         try:
             data = request.get_json() or {}
-            
+            logger.info(f"Registration attempt: {data}")
+
             # Validate required fields
             required_fields = ['username', 'email', 'password']
             for field in required_fields:
                 if not data.get(field):
+                    logger.warning(f"Missing field: {field}")
                     return jsonify({"error": f"Missing field: {field}"}), 400
             
             # Check if email already exists
-            if User.query.filter_by(email=data['email']).first():
+            existing_user = User.query.filter_by(email=data['email']).first()
+            if existing_user:
+                logger.warning(f"Email already registered: {data['email']}")
                 return jsonify({"error": "Email already registered"}), 400
             
-            # Create new user - USE THE IMPORTED USER MODEL
+            
+            logger.info("Creating new user...")
             user = User(
                 username=data['username'],
                 email=data['email'],
                 role='user'  # Add role
             )
-            user.set_password(data['password'])  # Use the set_password method from models.py
+
+            logger.info("Setting password...")
+            user.set_password(data['password'])  
+
+            logger.info("Saving to database...")
             db.session.add(user)
             db.session.commit()
+            logger.info("User saved successfully")
             
             # Create access token
             access_token = create_access_token(identity=str(user.id))
+            logger.info("Access token created")
             
             return jsonify({
                 "access_token": access_token,
@@ -100,18 +103,23 @@ def create_app():
             
         except Exception as e:
             db.session.rollback()
-            return jsonify({"error": "Internal server error"}), 500
+            logger.error(f"REGISTRATION ERROR: {str(e)}")
+            logger.error(f"ERROR TYPE: {type(e).__name__}")
+            logger.error("FULL TRACEBACK:")
+            logger.error(traceback.format_exc())
+            return jsonify({"error": "Internal server error", "debug": str(e)}), 500
     
     @auth_bp.route("/login", methods=["POST"])
     def login():
         try:
             data = request.get_json() or {}
+            logger.info(f"Login attempt for: {data.get('email')}")
             
             if not data.get('email') or not data.get('password'):
                 return jsonify({"error": "Missing email or password"}), 400
             
             user = User.query.filter_by(email=data['email']).first()
-            if not user or not user.check_password(data['password']):  # Use check_password method
+            if not user or not user.check_password(data['password']):  
                 return jsonify({"error": "Invalid credentials"}), 401
             
             # Create access token
@@ -124,6 +132,7 @@ def create_app():
             }), 200
             
         except Exception as e:
+            logger.error(f"LOGIN ERROR: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
     
     @auth_bp.route("/me", methods=["GET"])

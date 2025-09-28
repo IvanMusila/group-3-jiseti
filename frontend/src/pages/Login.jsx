@@ -3,10 +3,16 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginAsync } from '../features/auth/authSlice';
 import { Navigate, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { selectCurrentUserRole, selectIsAuthenticated } from '../features/auth/selectors';
 
 export default function Login() {
   const dispatch = useDispatch();
-  const { isAuthenticated, loading, error } = useSelector(state => state.auth);
+  const navigate = useNavigate();
+  const { loading, error } = useSelector(state => state.auth);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectCurrentUserRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
