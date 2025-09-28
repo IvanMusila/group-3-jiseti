@@ -1,12 +1,12 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.REACT_APP_API_URL || "http://127.0.0.1:5000"
+  baseURL:"https://jiseti-backend-zt8g.onrender.com/api/v1"
 });
 
 export const setAuthToken = token => {
   if (token) API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   else delete API.defaults.headers.common["Authorization"];
 };
-
+  
 export default API;

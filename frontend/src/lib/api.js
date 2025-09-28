@@ -1,20 +1,14 @@
 import axios from 'axios';
 
-function readImportMetaEnv() {
-  try {
-    // eslint-disable-next-line no-new-func
-    return new Function('return import.meta.env')();
-  } catch (error) {
-    return undefined;
-  }
-}
+// Directly use the backend URL - no complex env reading needed
+const baseURL = 'https://jiseti-backend-zt8g.onrender.com/api/v1';
 
-const viteEnv = readImportMetaEnv() || {};
-const baseURL = viteEnv.VITE_API_URL || (typeof process !== 'undefined' ? process.env?.VITE_API_URL : '') || '';
+const api = axios.create({ 
+  baseURL,
+  withCredentials: false,
+});
 
-const api = axios.create({ baseURL });
-
-// Attach token from Member 2's auth work (or any local storage token)
+// Attach token from auth
 api.interceptors.request.use((cfg) => {
   const token = localStorage.getItem('accessToken');
   if (token) cfg.headers.Authorization = `Bearer ${token}`;

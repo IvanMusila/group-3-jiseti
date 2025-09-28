@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, Blueprint
 from flask_jwt_extended import JWTManager, create_access_token
 from flask_cors import CORS
-from models import db, User  # Import User from models
+from models import db, User, Report  # Import User from models
 import os
 import re
 import logging
@@ -161,6 +161,79 @@ def create_app():
     @app.route('/<path:path>', methods=['OPTIONS'])
     def options_handler(path=None):
         return jsonify({"status": "preflight ok"}), 200
+
+
+    # Add after your auth routes in app.py
+reports_bp = Blueprint("reports", __name__)
+
+@reports_bp.route("/reports", methods=["GET", "OPTIONS"])
+def get_reports():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "preflight ok"}), 200
+    
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        
+        # Get paginated reports
+        reports = Report.query.order_by(Report.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        return jsonify({
+            "items": [report.to_dict() for report in reports.items],
+            "totalPages": reports.pages,
+            "totalItems": reports.total,
+            "page": page
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching reports: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@reports_bp.route("/reports", methods=["POST", "OPTIONS"])
+def create_report():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "preflight ok"}), 200
+    
+    try:
+        data = request.get_json() or {}
+        logger.info(f"Creating report: {data}")
+        
+        # Validate required fields
+        required_fields = ['title', 'description', 'type', 'location']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({"error": f"Missing field: {field}"}), 400
+        
+        # Get user ID from JWT token
+        from flask_jwt_extended import jwt_required, get_jwt_identity
+        user_id = get_jwt_identity()
+        
+        # Create new report
+        report = Report(
+            title=data['title'],
+            description=data['description'],
+            type=data['type'],
+            location=data['location'],
+            created_by=user_id
+        )
+        
+        db.session.add(report)
+        db.session.commit()
+        
+        return jsonify({
+            "id": report.id,
+            "message": "Report created successfully",
+            "report": report.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating report: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+# Register the reports blueprint
+app.register_blueprint(reports_bp, url_prefix="/api/v1")
 
     return app
 
