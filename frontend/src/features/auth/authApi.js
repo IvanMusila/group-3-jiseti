@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: 'https://jiseti-backend-zt8g.onrender.com/api/v1',
-  withCredentials: false // This requires supports_credentials=True on backend
+  withCredentials: true // This requires supports_credentials=True on backend
 });
 
 

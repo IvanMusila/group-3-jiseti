@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 export default function Signup() {
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.auth);
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -22,7 +22,7 @@ export default function Signup() {
       return;
     }
     
-    const result = await dispatch(signupAsync({ name, email, password }));
+    const result = await dispatch(signupAsync({ username, email, password }));
     if (result.type === 'auth/signup/fulfilled') {
       navigate('/login');
     }
@@ -51,18 +51,18 @@ export default function Signup() {
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full Name
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
               </label>
               <div className="mt-1">
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  autoComplete="name"
+                  autoComplete="username"
                   required
-                  value={name}
-                  onChange={e => setName(e.target.value)}
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
