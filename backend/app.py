@@ -1,11 +1,12 @@
 from flask import Flask, jsonify, request, Blueprint
-from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token
 from flask_cors import CORS
+from models import db, User  # Import User from models
 import os
 import re
 
-db = SQLAlchemy()
+# Remove this duplicate db initialization
+# db = SQLAlchemy()  # ❌ DELETE THIS LINE
 jwt = JWTManager()
 
 def create_app():
@@ -36,21 +37,21 @@ def create_app():
     # CREATE AUTH BLUEPRINT DIRECTLY (no import needed)
     auth_bp = Blueprint("auth", __name__)
     
-    # Simple User model
-    class User(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        username = db.Column(db.String(80), unique=True, nullable=False)
-        email = db.Column(db.String(120), unique=True, nullable=False)
-        password = db.Column(db.String(120), nullable=False)
-        role = db.Column(db.String(20), default='user')
-        
-        def to_dict(self):
-            return {
-                "id": self.id,
-                "username": self.username,
-                "email": self.email,
-                "role": self.role
-            }
+    # ❌ DELETE THIS DUPLICATE USER MODEL (lines 38-51)
+    # class User(db.Model):
+    #     id = db.Column(db.Integer, primary_key=True)
+    #     username = db.Column(db.String(80), unique=True, nullable=False)
+    #     email = db.Column(db.String(120), unique=True, nullable=False)
+    #     password = db.Column(db.String(120), nullable=False)
+    #     role = db.Column(db.String(20), default='user')
+    #     
+    #     def to_dict(self):
+    #         return {
+    #             "id": self.id,
+    #             "username": self.username,
+    #             "email": self.email,
+    #             "role": self.role
+    #         }
     
     # Create tables
     with app.app_context():
@@ -78,13 +79,13 @@ def create_app():
             if User.query.filter_by(email=data['email']).first():
                 return jsonify({"error": "Email already registered"}), 400
             
-            # Create new user
+            # Create new user - USE THE IMPORTED USER MODEL
             user = User(
                 username=data['username'],
                 email=data['email'],
-                password=data['password']  # In production, hash this!
+                role='user'  # Add role
             )
-            
+            user.set_password(data['password'])  # Use the set_password method from models.py
             db.session.add(user)
             db.session.commit()
             
@@ -110,7 +111,7 @@ def create_app():
                 return jsonify({"error": "Missing email or password"}), 400
             
             user = User.query.filter_by(email=data['email']).first()
-            if not user or user.password != data['password']:
+            if not user or not user.check_password(data['password']):  # Use check_password method
                 return jsonify({"error": "Invalid credentials"}), 401
             
             # Create access token

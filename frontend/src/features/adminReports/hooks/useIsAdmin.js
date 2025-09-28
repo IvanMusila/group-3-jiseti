@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { selectCurrentUserRole } from '../../auth/selectors';
 
 export function useIsAdmin() {
-  const role = selectCurrentUserRole();
-  return useMemo(() => role === 'admin', [role]);
+  const role = useSelector(selectCurrentUserRole);
+  return role === 'admin';
 }

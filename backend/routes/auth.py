@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app import db  # Changed from 'backend.app'
-from models.user import User  # Changed from 'backend.models.user'
+from app import db
+from models import User
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 auth_bp = Blueprint("auth", __name__)
@@ -24,12 +24,19 @@ def signup():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email already registered"}), 400
 
-    user = User(username=username, email=email)
+    # Create user with default 'user' role
+    user = User(username=username, email=email, role='user')
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({"msg": "User created successfully"}), 201
+    # Create token and return user data
+    access_token = create_access_token(identity=str(user.id))
+    return jsonify({
+        "access_token": access_token,  # ✅ Consistent naming
+        "user": user.to_dict(),
+        "message": "User created successfully"
+    }), 201
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -42,16 +49,11 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and user.check_password(password):
-        token = create_access_token(identity=str(user.id))
+        access_token = create_access_token(identity=str(user.id))
         return jsonify({
-            "msg": "Login successful",
-            "access_token": token,
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "role": user.role
-            }
+            "access_token": access_token,  # ✅ Consistent naming
+            "user": user.to_dict(),
+            "message": "Login successful"
         }), 200
 
     return jsonify({"error": "Invalid credentials"}), 401
@@ -63,9 +65,4 @@ def profile():
     user = db.session.get(User, int(user_id))
     if not user:
         return jsonify({"error": "User not found"}), 404
-    return jsonify({
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "role": user.role
-    }), 200
+    return jsonify(user.to_dict()), 200

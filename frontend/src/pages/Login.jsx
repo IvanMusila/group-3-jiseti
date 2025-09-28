@@ -10,7 +10,15 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (userRole === 'admin') {
+        navigate('/admin/reports');
+      } else {
+        navigate('/reports');
+      }
+    }
+  }, [isAuthenticated, userRole, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
