@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: your-app-name
+    env: python
+    plan: free
+    runtime: python  
+    pythonVersion: "3.11.9" 
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
