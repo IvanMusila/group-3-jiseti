@@ -23,7 +23,7 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
-    app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '/opt/render/uploads')
+    # app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '/opt/render/uploads')
     app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 50 * 1024 * 1024))  # 50MB
     
     # Allowed file extensions
