@@ -23,6 +23,11 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
+    app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '/opt/render/uploads')
+    app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 50 * 1024 * 1024))  # 50MB
+    
+    # Allowed file extensions
+    app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
 
     # ✅ CORS applied globally for all API routes
     CORS(
@@ -171,50 +176,103 @@ def create_app():
             logger.error(f"Error fetching reports: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
 
-    @reports_bp.route("/reports", methods=["POST", "OPTIONS"])
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+def ensure_upload_folder():
+    """Ensure the upload folder exists"""
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    os.makedirs(upload_folder, exist_ok=True)
+    return upload_folder
+
+    @app.route('/api/reports', methods=['POST'])
     @jwt_required()
     def create_report():
-        if request.method == 'OPTIONS':
-            return jsonify({"status": "preflight ok"}), 200
-        
         try:
-            data = request.get_json() or {}
-            logger.info(f"Creating report: {data}")
-            
+            # Check if request is multipart/form-data
+            if request.content_type.startswith('multipart/form-data'):
+                payload_str = request.form.get('payload')
+                if not payload_str:
+                    return jsonify({'message': 'Missing payload data'}), 400
+                
+                data = json.loads(payload_str)
+                files = request.files.getlist('attachments')
+            else:
+                data = request.get_json()
+                files = []
+
             # Validate required fields
-            required_fields = ['title', 'description', 'type', 'location']
-            for field in required_fields:
-                if not data.get(field):
-                    return jsonify({"error": f"Missing field: {field}"}), 400
-            
-            # Get user ID from JWT token
-            user_id = get_jwt_identity()
-            
-            # Create new report
+            if not data.get('title') or not data.get('description'):
+                return jsonify({'message': 'Title and description are required'}), 400
+
+            # Create report
             report = Report(
+                type=data.get('type', 'corruption'),
                 title=data['title'],
                 description=data['description'],
-                type=data['type'],
-                location=data['location'],
-                created_by=user_id
+                location=data.get('location', 'Unknown location'),
+                created_by=get_jwt_identity()
             )
-            
+
             db.session.add(report)
+            db.session.flush()
+
+            # Ensure upload folder exists
+            upload_folder = ensure_upload_folder()
+            
+            # Handle file uploads
+            saved_files = []
+            for file in files:
+                if file and allowed_file(file.filename):
+                    # Check file size
+                    file.seek(0, 2)  # Seek to end to get size
+                    file_size = file.tell()
+                    file.seek(0)  # Reset to beginning
+                    
+                    if file_size > current_app.config['MAX_CONTENT_LENGTH']:
+                        continue
+                    
+                    # Secure the filename and create unique name
+                    filename = secure_filename(file.filename)
+                    unique_filename = f"{report.id}_{int(datetime.now(timezone.utc).timestamp())}_{filename}"
+                    
+                    # Save to Render Disk
+                    file_path = os.path.join(upload_folder, unique_filename)
+                    file.save(file_path)
+                    
+                    # Create file record in database
+                    media_file = ReportMedia(
+                        report_id=report.id,
+                        filename=unique_filename,
+                        original_filename=filename,
+                        file_path=file_path,
+                        file_size=file_size
+                    )
+                    db.session.add(media_file)
+                    saved_files.append(media_file.to_dict())
+
             db.session.commit()
-            
-            return jsonify({
-                "id": report.id,
-                "message": "Report created successfully",
-                "report": report.to_dict()
-            }), 201
-            
+
+            report_data = report.to_dict()
+            report_data['attachments'] = saved_files
+
+            return jsonify(report_data), 201
+
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error creating report: {str(e)}")
-            return jsonify({"error": "Internal server error"}), 500
+            current_app.logger.error(f"Error creating report: {str(e)}")
+            return jsonify({'message': 'Failed to create report'}), 500
 
     # Register the reports blueprint
     app.register_blueprint(reports_bp, url_prefix="/api/v1")
+
+    @app.route('/api/media/<filename>')
+    def get_media(filename):
+        try:
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            return send_from_directory(upload_folder, filename)
+        except FileNotFoundError:
+            return jsonify({'message': 'File not found'}), 404
 
     # Health check routes
     @app.route("/")

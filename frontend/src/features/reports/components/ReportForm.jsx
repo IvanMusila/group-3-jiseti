@@ -43,16 +43,42 @@ export default function ReportForm({ mode }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onMediaChange = (event) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-    setMediaFiles((prev) => [...prev, ...files]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    } else {
-      event.target.value = '';
+ const onMediaChange = (event) => {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+
+  const validFiles = [];
+  const errors = [];
+
+  files.forEach(file => {
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      errors.push(`${file.name} is too large (max 10MB)`);
+      return;
     }
-  };
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
+    if (!allowedTypes.includes(file.type)) {
+      errors.push(`${file.name} is not a supported file type`);
+      return;
+    }
+
+    validFiles.push(file);
+  });
+
+  if (errors.length > 0) {
+    setError(errors.join(', '));
+  }
+
+  if (validFiles.length > 0) {
+    setMediaFiles((prev) => [...prev, ...validFiles]);
+  }
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = '';
+  }
+};
 
   const removeMediaAt = (index) => {
     setMediaFiles((prev) => prev.filter((_, idx) => idx !== index));
@@ -89,54 +115,59 @@ export default function ReportForm({ mode }) {
   };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    if (!form.title.trim() || !form.description.trim()) {
-      setError('Title and description are required');
-      return;
-    }
+  if (!form.title.trim() || !form.description.trim()) {
+    setError('Title and description are required');
+    return;
+  }
 
-    const basePayload = {
-      type: form.type,
-      title: form.title.trim(),
-      description: form.description.trim(),
-    };
-
-    if (form.lat && form.lng) {
-      basePayload.location = { lat: Number(form.lat), lng: Number(form.lng) };
-    }
-
-    const buildMultipart = (payload) => {
-      const data = new FormData();
-      data.append('payload', JSON.stringify(payload));
-      mediaFiles.forEach((file) => data.append('attachment', file));
-      return data;
-    };
-
-    try {
-      setSubmitting(true);
-      setError(null);
-      if (mode === 'edit' && existing) {
-        const patchPayload = { ...basePayload };
-        let patchToSend = patchPayload;
-        if (mediaFiles.length) {
-          patchToSend = buildMultipart(patchPayload);
-        }
-        await dispatch(updateReport({ id: existing.id, patch: patchToSend })).unwrap();
-      } else {
-        let createPayload = { ...basePayload };
-        if (mediaFiles.length) {
-          createPayload = buildMultipart(basePayload);
-        }
-        await dispatch(createReport(createPayload)).unwrap();
-      }
-      nav('/reports');
-    } catch (err) {
-      setError(err?.message || 'Failed to save report');
-    } finally {
-      setSubmitting(false);
-    }
+  // Create the base payload
+  const basePayload = {
+    type: form.type,
+    title: form.title.trim(),
+    description: form.description.trim(),
+    location: form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'Unknown location'
   };
+
+  try {
+    setSubmitting(true);
+    setError(null);
+
+    let payloadToSend;
+
+    if (mediaFiles.length > 0) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+      
+      // Append the JSON payload as a string
+      formData.append('payload', JSON.stringify(basePayload));
+      
+      // Append each file
+      mediaFiles.forEach((file, index) => {
+        formData.append('attachments', file);
+      });
+
+      payloadToSend = formData;
+    } else {
+      // Use regular JSON if no files
+      payloadToSend = basePayload;
+    }
+
+    if (mode === 'edit' && existing) {
+      await dispatch(updateReport({ id: existing.id, patch: payloadToSend })).unwrap();
+    } else {
+      await dispatch(createReport(payloadToSend)).unwrap();
+    }
+
+    nav('/reports');
+  } catch (err) {
+    console.error('Submission error:', err);
+    setError(err?.message || 'Failed to save report');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <section className="space-y-8">
