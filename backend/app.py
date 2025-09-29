@@ -23,16 +23,13 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
-    # app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '/opt/render/uploads')
-    app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_CONTENT_LENGTH', 50 * 1024 * 1024))  # 50MB
     
-    # Allowed file extensions
-    app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
 
     # ✅ CORS applied globally for all API routes
     CORS(
         app,
-        resources={r"/api/*": {"origins": ["http://127.0.0.1:3000", "http://localhost:3000"]}},
+        resources={r"/api/*": {"origins": ["https://jiseti-frontend-w02k.onrender.com", "http://127.0.0.1:3000", "http://localhost:3000"]}},
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         supports_credentials=True
     )
 
