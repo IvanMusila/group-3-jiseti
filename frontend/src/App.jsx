@@ -10,6 +10,7 @@ import { useIsAdmin } from './features/adminReports/hooks/useIsAdmin';
 import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Navbar from './components/Navbar';
 import './App.css';
 
 function AppLayout() {
@@ -26,34 +27,7 @@ function AppLayout() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <span className="app-logo">Jiseti</span>
-        <nav className="app-nav">
-          <NavLink to="/" end className={baseLinkClass}>
-            Home
-          </NavLink>
-          <NavLink to="/reports" className={baseLinkClass}>
-            Reports
-          </NavLink>
-          <NavLink
-            to="/reports/new"
-            className={({ isActive }) =>
-              `app-link app-link--primary ${isActive ? 'app-link--active' : ''}`
-            }
-          >
-            New Report
-          </NavLink>
-          {isAdmin && (
-            <NavLink to="/admin/reports" className={baseLinkClass}>
-              Admin
-            </NavLink>
-          )}
-          <NavLink to="/login" className={baseLinkClass}>
-            Login
-          </NavLink>
-          <NavLink to="/signup" className={baseLinkClass}>
-            Sign Up
-          </NavLink>
-        </nav>
+        
       </header>
       <main className="app-main">
         <div className="app-main__content">
@@ -89,6 +63,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <DebugAuth />
+      <Navbar />
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />

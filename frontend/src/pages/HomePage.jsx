@@ -1,72 +1,16 @@
 // src/pages/HomePage.jsx
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { logoutAsync } from "../features/auth/authSlice";
 import { Link, useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
 const HomePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate(); // Added missing hook
-  const { user, accessToken, isAuthenticated } = useSelector((state) => state.auth); // Use correct state structure
-
-  const handleLogout = async () => {
-    try {
-      await dispatch(logoutAsync()).unwrap();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      navigate('/login');
-    }
-  };
+  const { user, accessToken, isAuthenticated } = useSelector((state) => state.auth);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 to-yellow-950">
-      {/* Navigation */}
-      <nav className="bg-orange-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <div className="h-14 w-42">
-                  <img
-                    className="h-full w-auto"
-                    src="./images/jiseti-logo2.png"
-                    alt="Website logo"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center">
-              {!isAuthenticated ? ( // Use isAuthenticated instead of token
-                <div className="space-x-3">
-                  <Link
-                    to="/login"
-                    className="px-4 py-2 text-black font-medium rounded-md hover:text-yellow-950 hover:bg-orange-200 transition-colors"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/signup"
-                    className="px-4 py-2 bg-black text-white font-medium rounded-md hover:bg-yellow-950 transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <span className="text-black">Hello, <span className="font-semibold">{user?.name || user?.email}</span></span>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-red-600 font-medium rounded-md hover:text-red-800 hover:bg-red-50 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <div className="relative py-16 overflow-hidden">
@@ -97,8 +41,8 @@ const HomePage = () => {
                   </>
                 ) : (
                   <Link
-                    to="/dashboard"
-                    className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                    to="/reports"
+                    className="px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-yellow-950 transition-colors"
                   >
                     Go to Dashboard
                   </Link>
@@ -205,7 +149,7 @@ const HomePage = () => {
               <div className="inline-flex rounded-md shadow">
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50"
+                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-black bg-white hover:bg-yellow-950 hover:text-white"
                 >
                   Go to Dashboard
                 </Link>
