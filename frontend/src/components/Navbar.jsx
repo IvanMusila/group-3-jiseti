@@ -53,7 +53,7 @@ const Navbar = () => {
             {/* Navigation Links - Only show when authenticated */}
             {isAuthenticated && (
               <div className="hidden md:ml-8 md:flex md:space-x-6">
-                {user?.role === 'user' && (
+                
                 <Link
                   to="/reports/new"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -64,7 +64,7 @@ const Navbar = () => {
                 >
                   Create New Report
                 </Link>
-                )}
+                
                 <Link
                   to="/reports"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
