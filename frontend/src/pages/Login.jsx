@@ -13,7 +13,7 @@ export default function Login() {
   const { loading, error } = useSelector(state => state.auth);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectCurrentUserRole);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(loginAsync({ email, password }));
+    dispatch(loginAsync({ email, password })); // Send email instead of username
   };
 
   return (
@@ -61,7 +61,7 @@ export default function Login() {
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="email" // Changed to email type
                   autoComplete="email"
                   required
                   value={email}

@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import AdminReportsOverview from './features/adminReports/components/AdminReportsOverview';
 import AdminReportDetail from './features/adminReports/components/AdminReportDetail';
 import AdminGuard from './features/adminReports/components/AdminGuard';
@@ -71,9 +73,22 @@ function NotFound() {
   );
 }
 
+function DebugAuth() {
+  const auth = useSelector(state => state.auth);
+  
+  useEffect(() => {
+    console.log('Current Auth State:', auth);
+    console.log('LocalStorage Token:', localStorage.getItem('accessToken'));
+    console.log('LocalStorage User:', localStorage.getItem('user'));
+  }, [auth]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <DebugAuth />
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<HomePage />} />

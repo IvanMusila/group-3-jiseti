@@ -1,16 +1,22 @@
 // src/pages/HomePage.jsx
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../features/auth/authSlice";
-import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import { logoutAsync } from "../features/auth/authSlice";
+import { Link, useNavigate } from "react-router-dom";
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const { user, token } = useSelector((state) => state.auth);
+  const navigate = useNavigate(); // Added missing hook
+  const { user, accessToken, isAuthenticated } = useSelector((state) => state.auth); // Use correct state structure
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutAsync()).unwrap();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      navigate('/login');
+    }
   };
 
   return (
@@ -21,18 +27,17 @@ const HomePage = () => {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="h-14 w-42 ">
-                    <img
-                        className=" "
-                        src="./images/jiseti-logo2.png"
-                        alt="Website logo"
-                    />
+                <div className="h-14 w-42">
+                  <img
+                    className="h-full w-auto"
+                    src="./images/jiseti-logo2.png"
+                    alt="Website logo"
+                  />
                 </div>
-                {/* <span className="ml-2 text-xl font-bold text-black playfair-display">Jiseti</span> */}
               </div>
             </div>
             <div className="flex items-center">
-              {!token ? (
+              {!isAuthenticated ? ( // Use isAuthenticated instead of token
                 <div className="space-x-3">
                   <Link
                     to="/login"
@@ -49,7 +54,7 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
-                  <span className="text-black">Hello, <span className="font-semibold">{user?.name}</span></span>
+                  <span className="text-black">Hello, <span className="font-semibold">{user?.name || user?.email}</span></span>
                   <button
                     onClick={handleLogout}
                     className="px-4 py-2 text-red-600 font-medium rounded-md hover:text-red-800 hover:bg-red-50 transition-colors"
@@ -75,7 +80,7 @@ const HomePage = () => {
                 Jiseti Platform connects citizens with local government to foster transparency, participation, and community development.
               </p>
               <div className="mt-8 flex space-x-4">
-                {!token ? (
+                {!isAuthenticated ? ( // Use isAuthenticated instead of token
                   <>
                     <Link
                       to="/signup"
@@ -102,7 +107,7 @@ const HomePage = () => {
             </div>
             <div className="mt-10 lg:mt-0">
               <img
-                className="rounded-lg shadow-xl"
+                className="rounded-lg shadow-xl w-full h-auto"
                 src="./images/justice-pic.jpg"
                 alt="Community engagement"
               />
@@ -187,7 +192,7 @@ const HomePage = () => {
             <span className="block text-black">Join your community today.</span>
           </h2>
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-            {!token ? (
+            {!isAuthenticated ? ( // Use isAuthenticated instead of token
               <div className="inline-flex rounded-md shadow">
                 <Link
                   to="/signup"

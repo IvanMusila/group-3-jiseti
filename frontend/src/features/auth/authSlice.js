@@ -23,6 +23,19 @@ export const loginAsync = createAsyncThunk('auth/login', async (credentials, { r
   }
 });
 
+// Add logout async thunk
+export const logoutAsync = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
+  try {
+    // Optional: Call backend logout endpoint if you have one
+    // await authApi.logout();
+    return true;
+  } catch (err) {
+    // Even if backend call fails, we still want to clear local storage
+    console.error('Logout API call failed:', err);
+    return rejectWithValue(err.response?.data || { message: err.message });
+  }
+});
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -37,6 +50,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.user = null;
       state.isAuthenticated = false;
+      state.error = null;
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
     },
@@ -46,6 +60,9 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       localStorage.setItem('accessToken', action.payload.accessToken);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
+    },
+    clearError(state) {
+      state.error = null;
     }
   },
   extraReducers: (builder) => {
@@ -76,8 +93,32 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || 'Login failed';
       })
+      // logout
+      .addCase(logoutAsync.pending, (state) => { 
+        state.loading = true; 
+        state.error = null; 
+      })
+      .addCase(logoutAsync.fulfilled, (state) => {
+        state.loading = false;
+        state.accessToken = null;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = null;
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+      })
+      .addCase(logoutAsync.rejected, (state, action) => {
+        state.loading = false;
+        // Even if the API call fails, we still clear local state
+        state.accessToken = null;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload?.message || 'Logout failed';
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+      })
   }
 });
 
-export const { logout, setCredentials } = authSlice.actions;
+export const { logout, setCredentials, clearError } = authSlice.actions;
 export default authSlice.reducer;
