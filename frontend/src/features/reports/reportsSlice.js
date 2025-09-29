@@ -9,25 +9,16 @@ export const fetchReports = createAsyncThunk('reports/fetch', async (page = 1) =
 });
 
 export const createReport = createAsyncThunk('reports/create', async (payload) => {
-  const isMultipart = payload instanceof FormData;
-  
-  const config = {
-    headers: isMultipart ? {} : { 'Content-Type': 'application/json' }
-    // For FormData, don't set Content-Type - let browser set it with boundary
-  };
-  
-  const { data } = await api.post('/reports', payload, config);
+  const { data } = await api.post('/reports', payload, {
+    headers: { 'Content-Type': 'application/json' }
+  });
   return data;
 });
 
 export const updateReport = createAsyncThunk('reports/update', async ({ id, patch }) => {
-  const isMultipart = patch instanceof FormData;
-  
-  const config = {
-    headers: isMultipart ? {} : { 'Content-Type': 'application/json' }
-  };
-  
-  const { data } = await api.put(`/reports/${id}`, patch, config);
+  const { data } = await api.put(`/reports/${id}`, patch, {
+    headers: { 'Content-Type': 'application/json' }
+  });
   return data;
 });
 

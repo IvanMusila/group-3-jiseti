@@ -58,25 +58,25 @@ class Report(db.Model):
             'updated_at': self.updated_at.isoformat()
         }
 
-class ReportMedia(db.Model):
-    __tablename__ = 'report_media'
-    id = db.Column(db.Integer, primary_key=True)
-    report_id = db.Column(db.Integer, db.ForeignKey('reports.id'), nullable=False)
-    filename = db.Column(db.String(255), nullable=False)
-    original_filename = db.Column(db.String(255), nullable=False)
-    file_path = db.Column(db.String(500), nullable=False)
-    file_size = db.Column(db.Integer, nullable=False)
-    uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+# class ReportMedia(db.Model):
+#     __tablename__ = 'report_media'
+#     id = db.Column(db.Integer, primary_key=True)
+#     report_id = db.Column(db.Integer, db.ForeignKey('reports.id'), nullable=False)
+#     filename = db.Column(db.String(255), nullable=False)
+#     original_filename = db.Column(db.String(255), nullable=False)
+#     file_path = db.Column(db.String(500), nullable=False)
+#     file_size = db.Column(db.Integer, nullable=False)
+#     uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    report = db.relationship('Report', backref=db.backref('media_files', lazy=True, cascade='all, delete-orphan'))
+#     report = db.relationship('Report', backref=db.backref('media_files', lazy=True, cascade='all, delete-orphan'))
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'filename': self.filename,
-            'original_filename': self.original_filename,
-            'file_path': self.file_path,
-            'file_size': self.file_size,
-            'uploaded_at': self.uploaded_at.isoformat(),
-            'url': f'/api/media/{self.filename}'  # This will serve from Render Disk
-        }
+#     def to_dict(self):
+#         return {
+#             'id': self.id,
+#             'filename': self.filename,
+#             'original_filename': self.original_filename,
+#             'file_path': self.file_path,
+#             'file_size': self.file_size,
+#             'uploaded_at': self.uploaded_at.isoformat(),
+#             'url': f'/api/media/{self.filename}'  # This will serve from Render Disk
+#         }

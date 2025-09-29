@@ -1,39 +1,33 @@
-import { useState, useEffect, useRef } from 'react';
+// ReportForm.jsx - Simplified version without file uploads
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createReport, updateReport } from '../reportsSlice';
 import { useNavigate, useParams } from 'react-router-dom';
-
-// Geolocation API per MDN
-// https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition
 
 export default function ReportForm({ mode }) {
   const dispatch = useDispatch();
   const nav = useNavigate();
   const { id } = useParams();
   const { items } = useSelector((state) => state.reports);
-  const fileInputRef = useRef(null);
 
   const existing = mode === 'edit' ? items.find((report) => String(report.id) === String(id)) : null;
 
   const [form, setForm] = useState({
-    type: existing?.type || 'red-flag',
+    type: existing?.type || 'corruption',
     title: existing?.title || '',
     description: existing?.description || '',
-    lat: existing?.location?.lat || '',
-    lng: existing?.location?.lng || '',
+    location: existing?.location || '',
   });
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [mediaFiles, setMediaFiles] = useState([]);
 
   useEffect(() => {
     if (mode === 'edit' && existing) {
       setForm({
-        type: existing.type || 'red-flag',
+        type: existing.type || 'corruption',
         title: existing.title || '',
         description: existing.description || '',
-        lat: existing.location?.lat || '',
-        lng: existing.location?.lng || '',
+        location: existing.location || '',
       });
     }
   }, [mode, existing]);
@@ -41,58 +35,6 @@ export default function ReportForm({ mode }) {
   const onChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
- const onMediaChange = (event) => {
-  const files = Array.from(event.target.files || []);
-  if (!files.length) return;
-
-  const validFiles = [];
-  const errors = [];
-
-  files.forEach(file => {
-    // Check file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      errors.push(`${file.name} is too large (max 10MB)`);
-      return;
-    }
-
-    // Check file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime'];
-    if (!allowedTypes.includes(file.type)) {
-      errors.push(`${file.name} is not a supported file type`);
-      return;
-    }
-
-    validFiles.push(file);
-  });
-
-  if (errors.length > 0) {
-    setError(errors.join(', '));
-  }
-
-  if (validFiles.length > 0) {
-    setMediaFiles((prev) => [...prev, ...validFiles]);
-  }
-
-  if (fileInputRef.current) {
-    fileInputRef.current.value = '';
-  }
-};
-
-  const removeMediaAt = (index) => {
-    setMediaFiles((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  const triggerMediaDialog = () => {
-    fileInputRef.current?.click();
-  };
-
-  const formatSize = (size) => {
-    if (!size && size !== 0) return '';
-    if (size < 1024) return `${size}B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`;
-    return `${(size / (1024 * 1024)).toFixed(1)}MB`;
   };
 
   const useGeolocation = () => {
@@ -103,10 +45,11 @@ export default function ReportForm({ mode }) {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const lat = Number(position.coords.latitude).toFixed(5);
+        const lng = Number(position.coords.longitude).toFixed(5);
         setForm((prev) => ({
           ...prev,
-          lat: Number(position.coords.latitude).toFixed(5),
-          lng: Number(position.coords.longitude).toFixed(5),
+          location: `${lat}, ${lng}`
         }));
         setError(null);
       },
@@ -115,59 +58,37 @@ export default function ReportForm({ mode }) {
   };
 
   const handleSubmit = async (event) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (!form.title.trim() || !form.description.trim()) {
-    setError('Title and description are required');
-    return;
-  }
+    if (!form.title.trim() || !form.description.trim()) {
+      setError('Title and description are required');
+      return;
+    }
 
-  // Create the base payload
-  const basePayload = {
-    type: form.type,
-    title: form.title.trim(),
-    description: form.description.trim(),
-    location: form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'Unknown location'
+    const payload = {
+      type: form.type,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      location: form.location || 'Unknown location'
+    };
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      
+      if (mode === 'edit' && existing) {
+        await dispatch(updateReport({ id: existing.id, patch: payload })).unwrap();
+      } else {
+        await dispatch(createReport(payload)).unwrap();
+      }
+      
+      nav('/reports');
+    } catch (err) {
+      setError(err?.message || 'Failed to save report');
+    } finally {
+      setSubmitting(false);
+    }
   };
-
-  try {
-    setSubmitting(true);
-    setError(null);
-
-    let payloadToSend;
-
-    if (mediaFiles.length > 0) {
-      // Use FormData for file uploads
-      const formData = new FormData();
-      
-      // Append the JSON payload as a string
-      formData.append('payload', JSON.stringify(basePayload));
-      
-      // Append each file
-      mediaFiles.forEach((file, index) => {
-        formData.append('attachments', file);
-      });
-
-      payloadToSend = formData;
-    } else {
-      // Use regular JSON if no files
-      payloadToSend = basePayload;
-    }
-
-    if (mode === 'edit' && existing) {
-      await dispatch(updateReport({ id: existing.id, patch: payloadToSend })).unwrap();
-    } else {
-      await dispatch(createReport(payloadToSend)).unwrap();
-    }
-
-    nav('/reports');
-  } catch (err) {
-    console.error('Submission error:', err);
-    setError(err?.message || 'Failed to save report');
-  } finally {
-    setSubmitting(false);
-  }
-};
 
   return (
     <section className="space-y-8">
@@ -177,17 +98,13 @@ export default function ReportForm({ mode }) {
           {mode === 'edit' ? 'Update existing report' : 'Submit a new report'}
         </h1>
         <p className="max-w-2xl text-sm text-gray-600">
-          Share issues impacting your community. Accurate descriptions and locations help
-          administrators act faster.
+          Share issues impacting your community. Accurate descriptions and locations help administrators act faster.
         </p>
       </header>
 
       <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-orange-200/30">
         {error && (
-          <div
-            role="alert"
-            className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-          >
+          <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -202,8 +119,10 @@ export default function ReportForm({ mode }) {
                 onChange={onChange}
                 className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base text-gray-800 shadow-sm focus:border-yellow-900 focus:outline-none focus:ring-4 focus:ring-yellow-900/20"
               >
-                <option value="red-flag">Red Flag</option>
-                <option value="intervention">Intervention</option>
+                <option value="corruption">Corruption</option>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="sanitation">Sanitation</option>
+                <option value="safety">Safety</option>
               </select>
             </label>
 
@@ -231,88 +150,16 @@ export default function ReportForm({ mode }) {
             />
           </label>
 
-          <div className="grid gap-6 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium text-gray-700">
-              Latitude
-              <input
-                name="lat"
-                value={form.lat}
-                onChange={onChange}
-                type="number"
-                step="0.00001"
-                min="-90"
-                max="90"
-                placeholder="e.g. -1.286389"
-                className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base text-gray-800 shadow-sm focus:border-yellow-900 focus:outline-none focus:ring-4 focus:ring-yellow-900/20"
-              />
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-medium text-gray-700">
-              Longitude
-              <input
-                name="lng"
-                value={form.lng}
-                onChange={onChange}
-                type="number"
-                step="0.00001"
-                min="-180"
-                max="180"
-                placeholder="e.g. 36.817223"
-                className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base text-gray-800 shadow-sm focus:border-yellow-900 focus:outline-none focus:ring-4 focus:ring-yellow-900/20"
-              />
-            </label>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-dashed border-yellow-900/40 bg-white p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Supporting media</p>
-                  <p className="text-xs text-gray-500">
-                    Add photos or short videos (max 10MB each) to strengthen your report.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={triggerMediaDialog}
-                  className="inline-flex items-center justify-center rounded-xl border border-yellow-900 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-yellow-900 transition hover:bg-yellow-900 hover:text-white"
-                >
-                  Upload media
-                </button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                className="hidden"
-                onChange={onMediaChange}
-              />
-            </div>
-
-            {mediaFiles.length > 0 && (
-              <ul className="space-y-2">
-                {mediaFiles.map((file, index) => (
-                  <li
-                    key={`${file.name}-${file.lastModified}-${index}`}
-                    className="flex items-center justify-between rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-gray-700"
-                  >
-                    <span className="flex-1 truncate pr-3">
-                      {file.name}
-                      <span className="pl-2 text-xs text-gray-500">{formatSize(file.size)}</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeMediaAt(index)}
-                      className="text-xs font-semibold text-red-600 transition hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <label className="flex flex-col gap-2 text-sm font-medium text-gray-700">
+            Location
+            <input
+              name="location"
+              value={form.location}
+              onChange={onChange}
+              placeholder="e.g. -1.286389, 36.817223 or 'Main Street, Downtown'"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-base text-gray-800 shadow-sm focus:border-yellow-900 focus:outline-none focus:ring-4 focus:ring-yellow-900/20"
+            />
+          </label>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <button

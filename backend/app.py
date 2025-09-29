@@ -176,30 +176,15 @@ def create_app():
             logger.error(f"Error fetching reports: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
 
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'mkv'}
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-def ensure_upload_folder():
-    """Ensure the upload folder exists"""
-    upload_folder = current_app.config['UPLOAD_FOLDER']
-    os.makedirs(upload_folder, exist_ok=True)
-    return upload_folder
-
-    @app.route('/api/reports', methods=['POST'])
+    @reports_bp.route('/reports', methods=['POST'])
     @jwt_required()
     def create_report():
         try:
-            # Check if request is multipart/form-data
-            if request.content_type.startswith('multipart/form-data'):
-                payload_str = request.form.get('payload')
-                if not payload_str:
-                    return jsonify({'message': 'Missing payload data'}), 400
-                
-                data = json.loads(payload_str)
-                files = request.files.getlist('attachments')
-            else:
-                data = request.get_json()
-                files = []
+            # Only handle JSON requests - remove multipart/form-data logic
+            data = request.get_json()
+            
+            if not data:
+                return jsonify({'message': 'Request must be JSON'}), 400
 
             # Validate required fields
             if not data.get('title') or not data.get('description'):
@@ -215,81 +200,76 @@ def ensure_upload_folder():
             )
 
             db.session.add(report)
-            db.session.flush()
-
-            # Ensure upload folder exists
-            upload_folder = ensure_upload_folder()
-            
-            # Handle file uploads
-            saved_files = []
-            for file in files:
-                if file and allowed_file(file.filename):
-                    # Check file size
-                    file.seek(0, 2)  # Seek to end to get size
-                    file_size = file.tell()
-                    file.seek(0)  # Reset to beginning
-                    
-                    if file_size > current_app.config['MAX_CONTENT_LENGTH']:
-                        continue
-                    
-                    # Secure the filename and create unique name
-                    filename = secure_filename(file.filename)
-                    unique_filename = f"{report.id}_{int(datetime.now(timezone.utc).timestamp())}_{filename}"
-                    
-                    # Save to Render Disk
-                    file_path = os.path.join(upload_folder, unique_filename)
-                    file.save(file_path)
-                    
-                    # Create file record in database
-                    media_file = ReportMedia(
-                        report_id=report.id,
-                        filename=unique_filename,
-                        original_filename=filename,
-                        file_path=file_path,
-                        file_size=file_size
-                    )
-                    db.session.add(media_file)
-                    saved_files.append(media_file.to_dict())
-
             db.session.commit()
 
-            report_data = report.to_dict()
-            report_data['attachments'] = saved_files
-
-            return jsonify(report_data), 201
+            return jsonify(report.to_dict()), 201
 
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error creating report: {str(e)}")
             return jsonify({'message': 'Failed to create report'}), 500
 
+    @reports_bp.route('/reports/<int:report_id>', methods=['PUT'])
+    @jwt_required()
+    def update_report(report_id):
+        try:
+            data = request.get_json()
+            report = Report.query.get_or_404(report_id)
+            
+            # Update fields
+            if 'title' in data:
+                report.title = data['title']
+            if 'description' in data:
+                report.description = data['description']
+            if 'location' in data:
+                report.location = data['location']
+            if 'type' in data:
+                report.type = data['type']
+            if 'status' in data:
+                report.status = data['status']
+                
+            db.session.commit()
+            
+            return jsonify(report.to_dict()), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': 'Failed to update report'}), 500
+
+    @reports_bp.route('/reports/<int:report_id>', methods=['DELETE'])
+    @jwt_required()
+    def delete_report(report_id):
+        try:
+            report = Report.query.get_or_404(report_id)
+            db.session.delete(report)
+            db.session.commit()
+            
+            return jsonify({'message': 'Report deleted successfully'}), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': 'Failed to delete report'}), 500
+
     # Register the reports blueprint
     app.register_blueprint(reports_bp, url_prefix="/api/v1")
 
-    @app.route('/api/media/<filename>')
-    def get_media(filename):
-        try:
-            upload_folder = current_app.config['UPLOAD_FOLDER']
-            return send_from_directory(upload_folder, filename)
-        except FileNotFoundError:
-            return jsonify({'message': 'File not found'}), 404
 
-    # Health check routes
+        # Health check routes
     @app.route("/")
     def home():
-        return jsonify({"status": "running", "message": "Jiseti Backend API"}), 200
+            return jsonify({"status": "running", "message": "Jiseti Backend API"}), 200
 
     @app.route("/ping")
     def ping(): 
-        return {"msg": "pong"}, 200
+            return {"msg": "pong"}, 200
 
-    # Global OPTIONS handler
+        # Global OPTIONS handler
     @app.route('/', methods=['OPTIONS'])
     @app.route('/<path:path>', methods=['OPTIONS'])
     def options_handler(path=None):
-        return jsonify({"status": "preflight ok"}), 200
+            return jsonify({"status": "preflight ok"}), 200
 
-    return app  # ✅ Correct indentation - same level as def create_app()
+    return app  
 
 # Create app instance
 app = create_app()
