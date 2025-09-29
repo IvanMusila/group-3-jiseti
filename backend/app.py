@@ -27,10 +27,18 @@ def create_app():
 
     # ✅ CORS applied globally for all API routes
     CORS(
-        app,
-        resources={r"/api/*": {"origins": ["https://jiseti-frontend-w02k.onrender.com", "http://127.0.0.1:3000", "http://localhost:3000"]}},
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        supports_credentials=True
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "https://jiseti-frontend-w02k.onrender.com", 
+                "http://127.0.0.1:3000", 
+                "http://localhost:3000"
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "supports_credentials": True
+        }
+    }
     )
 
     # Init extensions
