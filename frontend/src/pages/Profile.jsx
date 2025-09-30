@@ -43,21 +43,21 @@ export default function Profile() {
   };
 
   const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      await dispatch(updateUser({ 
-        userId: user.id, 
-        userData: formData 
-      })).unwrap();
-      
-      setMessage('Profile updated successfully!');
-      setEditMode(false);
-      setError('');
-    } catch (err) {
-      setError(err?.message || 'Failed to update profile');
-      setMessage('');
-    }
-  };
+  e.preventDefault();
+  try {
+    await dispatch(updateUser({ 
+      userId: user.id, 
+      userData: formData 
+    })).unwrap();
+    
+    setMessage('Profile updated successfully!');
+    setEditMode(false);
+    setError('');
+  } catch (err) {
+    setError(err?.message || 'Failed to update profile');
+    setMessage('');
+  }
+};
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

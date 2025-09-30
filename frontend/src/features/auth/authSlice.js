@@ -70,13 +70,15 @@ export const logoutAsync = createAsyncThunk('auth/logout', async (_, { rejectWit
   }
 });
 
-// In your authSlice.js - add this async thunk
+
 export const updateUser = createAsyncThunk(
   'auth/updateUser',
-  async ({ userId, userData }, { rejectWithValue }) => {
+  async ({ userId, userData }, { rejectWithValue, getState }) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/v1/users/${userId}`, {
+      const { auth } = getState();
+      const token = auth.accessToken;
+      
+      const response = await fetch(`https://jiseti-backend-zt8g.onrender.com/api/v1/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -85,14 +87,15 @@ export const updateUser = createAsyncThunk(
         body: JSON.stringify(userData)
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.message || 'Failed to update user');
+        return rejectWithValue(data.message || data.error || 'Failed to update user');
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Network error');
     }
   }
 );
