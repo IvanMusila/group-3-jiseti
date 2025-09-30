@@ -36,6 +36,34 @@ export const logoutAsync = createAsyncThunk('auth/logout', async (_, { rejectWit
   }
 });
 
+// In your authSlice.js - add this async thunk
+export const updateUser = createAsyncThunk(
+  'auth/updateUser',
+  async ({ userId, userData }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/v1/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(userData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.message || 'Failed to update user');
+      }
+
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -117,6 +145,15 @@ const authSlice = createSlice({
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
       })
+      
+    .addCase(updateUser.fulfilled, (state, action) => {
+      state.user = action.payload;
+      
+      localStorage.setItem('user', JSON.stringify(action.payload));
+    })
+    .addCase(updateUser.rejected, (state, action) => {
+      state.error = action.payload;
+    });
   }
 });
 

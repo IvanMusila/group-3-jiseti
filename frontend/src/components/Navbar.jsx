@@ -158,13 +158,13 @@ const Navbar = () => {
                         >
                           Your Profile
                         </Link>
-                        <Link
+                        {/* <Link
                           to="/settings"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           onClick={() => setShowDropdown(false)}
                         >
                           Settings
-                        </Link>
+                        </Link> */}
                         <div className="border-t border-gray-100">
                           <button
                             onClick={handleLogout}
@@ -197,11 +197,11 @@ const Navbar = () => {
             </div>
             <div className="space-y-1">
               <Link
-                to="/dashboard"
+                to="/reports/new"
                 className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-yellow-950 hover:bg-orange-200"
                 onClick={() => setShowDropdown(false)}
               >
-                Dashboard
+                Create New Report
               </Link>
               <Link
                 to="/reports"
@@ -212,11 +212,11 @@ const Navbar = () => {
               </Link>
               {user?.role === 'admin' && (
                 <Link
-                  to="/admin"
+                  to="admin/reports"
                   className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-yellow-950 hover:bg-orange-200"
                   onClick={() => setShowDropdown(false)}
                 >
-                  Admin
+                  Admin Dashboard
                 </Link>
               )}
               <Link
