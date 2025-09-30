@@ -258,8 +258,41 @@ def create_app():
     # Register the reports blueprint
     app.register_blueprint(reports_bp, url_prefix="/api/v1")
 
+    
+    @auth_bp.route('/users/<int:user_id>', methods=['PUT'])
+    @jwt_required()
+    def update_user(user_id):
+        try:
+            current_user_id = get_jwt_identity()
+            
+            
+            if current_user_id != user_id:
+                return jsonify({"message": "Unauthorized"}), 403
+            
+            data = request.get_json()
+            user = User.query.get_or_404(user_id)
+            
+            
+            if 'username' in data:
+                user.username = data['username']
+            if 'email' in data:
+                # Check if email is already taken by another user
+                existing_user = User.query.filter_by(email=data['email']).first()
+                if existing_user and existing_user.id != user_id:
+                    return jsonify({"message": "Email already taken"}), 400
+                user.email = data['email']
+            
+            db.session.commit()
+            
+            return jsonify(user.to_dict()), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"message": "Failed to update user"}), 500
 
-        # Health check routes
+    app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
+
+       
     @app.route("/")
     def home():
             return jsonify({"status": "running", "message": "Jiseti Backend API"}), 200

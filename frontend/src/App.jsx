@@ -6,11 +6,13 @@ import AdminReportDetail from './features/adminReports/components/AdminReportDet
 import AdminGuard from './features/adminReports/components/AdminGuard';
 import ReportList from './features/reports/components/ReportList';
 import ReportForm from './features/reports/components/ReportForm';
+import { selectIsAuthenticated } from './features/auth/selectors';
 import { useIsAdmin } from './features/adminReports/hooks/useIsAdmin';
 import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Navbar from './components/Navbar';
+import Profile from './pages/Profile';
 import './App.css';
 
 function AppLayout() {
@@ -60,6 +62,8 @@ function DebugAuth() {
 }
 
 export default function App() {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  
   return (
     <BrowserRouter>
       <DebugAuth />
@@ -69,6 +73,7 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="/profile" element={isAuthenticated ? <Profile /> : <Login />} />
           <Route path="reports" element={<ReportList />} />
           <Route path="reports/new" element={<ReportForm mode="create" />} />
           <Route path="reports/:id/edit" element={<ReportForm mode="edit" />} />
