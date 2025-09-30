@@ -177,16 +177,21 @@ def create_app():
         try:
             current_user_id = get_jwt_identity()
             
-            
-            if current_user_id != user_id:
+            # Users can only update their own profile
+            if int(current_user_id) != user_id:
                 return jsonify({"message": "Unauthorized"}), 403
             
             data = request.get_json()
             user = User.query.get_or_404(user_id)
             
-            
+            # Update allowed fields
             if 'username' in data:
+                # Check if username is already taken by another user
+                existing_user = User.query.filter_by(username=data['username']).first()
+                if existing_user and existing_user.id != user_id:
+                    return jsonify({"message": "Username already taken"}), 400
                 user.username = data['username']
+                
             if 'email' in data:
                 # Check if email is already taken by another user
                 existing_user = User.query.filter_by(email=data['email']).first()
@@ -200,8 +205,13 @@ def create_app():
             
         except Exception as e:
             db.session.rollback()
+            logger.error(f"Error updating user: {str(e)}")
             return jsonify({"message": "Failed to update user"}), 500
 
+    
+    @auth_bp.route("/users/<int:user_id>", methods=["OPTIONS"])
+    def handle_user_options(user_id=None):
+        return jsonify({"status": "preflight ok"}), 200
 
     # Register the auth blueprint
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
