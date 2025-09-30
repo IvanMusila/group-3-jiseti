@@ -63,7 +63,7 @@ def create_app():
     def handle_options():
         return jsonify({"status": "preflight ok"}), 200
     
-    # Auth routes
+    
     @auth_bp.route("/register", methods=["POST"])
     def register():
         try:
@@ -78,10 +78,24 @@ def create_app():
                     return jsonify({"error": f"Missing field: {field}"}), 400
             
             # Check if email already exists
-            existing_user = User.query.filter_by(email=data['email']).first()
-            if existing_user:
+            existing_user_email = User.query.filter_by(email=data['email']).first()
+            if existing_user_email:
                 logger.warning(f"Email already registered: {data['email']}")
-                return jsonify({"error": "Email already registered"}), 400
+                return jsonify({"error": "Email address already registered"}), 400
+            
+            # Check if username already exists
+            existing_user_username = User.query.filter_by(username=data['username']).first()
+            if existing_user_username:
+                logger.warning(f"Username already taken: {data['username']}")
+                return jsonify({"error": "Username already taken"}), 400
+            
+            # Validate email format
+            if '@' not in data['email'] or '.' not in data['email']:
+                return jsonify({"error": "Please enter a valid email address"}), 400
+            
+            # Validate password strength
+            if len(data['password']) < 6:
+                return jsonify({"error": "Password must be at least 6 characters long"}), 400
             
             logger.info("Creating new user...")
             user = User(
@@ -112,10 +126,16 @@ def create_app():
             db.session.rollback()
             logger.error(f"REGISTRATION ERROR: {str(e)}")
             logger.error(f"ERROR TYPE: {type(e).__name__}")
-            logger.error("FULL TRACEBACK:")
-            logger.error(traceback.format_exc())
-            return jsonify({"error": "Internal server error", "debug": str(e)}), 500
-    
+            
+            # Handle specific database errors
+            if "already exists" in str(e):
+                if "username" in str(e):
+                    return jsonify({"error": "Username already taken"}), 400
+                elif "email" in str(e):
+                    return jsonify({"error": "Email address already registered"}), 400
+            
+            return jsonify({"error": "Registration failed. Please try again."}), 500
+
     @auth_bp.route("/login", methods=["POST"])
     def login():
         try:

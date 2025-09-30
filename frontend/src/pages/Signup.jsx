@@ -7,25 +7,88 @@ import { Link, useNavigate } from 'react-router-dom';
 export default function Signup() {
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.auth);
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [validationErrors, setValidationErrors] = useState({});
   const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Username validation
+    if (!formData.username.trim()) {
+      errors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      errors.username = 'Username must be at least 3 characters';
+    } else if (!/^[a-zA-Z0-9_.-]+$/.test(formData.username)) {
+      errors.username = 'Username can only contain letters, numbers, dots, hyphens, and underscores';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters long';
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      alert("Passwords don't match");
+    if (!validateForm()) {
       return;
     }
     
-    const result = await dispatch(signupAsync({ username, email, password }));
+    const result = await dispatch(signupAsync({ 
+      username: formData.username, 
+      email: formData.email, 
+      password: formData.password 
+    }));
+    
     if (result.type === 'auth/signup/fulfilled') {
       navigate('/login');
     }
+  };
+
+  const getFieldError = (fieldName) => {
+    return validationErrors[fieldName] || '';
   };
 
   return (
@@ -61,11 +124,16 @@ export default function Signup() {
                   type="text"
                   autoComplete="username"
                   required
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    getFieldError('username') ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {getFieldError('username') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('username')}</p>
+              )}
             </div>
 
             <div>
@@ -79,11 +147,16 @@ export default function Signup() {
                   type="email"
                   autoComplete="email"
                   required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    getFieldError('email') ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {getFieldError('email') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
+              )}
             </div>
 
             <div>
@@ -97,11 +170,16 @@ export default function Signup() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    getFieldError('password') ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {getFieldError('password') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('password')}</p>
+              )}
             </div>
 
             <div>
@@ -115,11 +193,16 @@ export default function Signup() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    getFieldError('confirmPassword') ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {getFieldError('confirmPassword') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('confirmPassword')}</p>
+              )}
             </div>
 
             <div className="flex items-center">
@@ -127,7 +210,7 @@ export default function Signup() {
                 id="terms"
                 name="terms"
                 type="checkbox"
-                className="h-4 w-4 bg-yellow-950 hover:bg-yellow-900 focus:ring-yellow-900 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 required
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
@@ -169,7 +252,6 @@ export default function Signup() {
               </div>
             )}
           </form>
-
         </div>
       </div>
     </div>
