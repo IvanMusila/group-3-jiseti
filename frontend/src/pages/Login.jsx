@@ -1,10 +1,9 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginAsync } from '../features/auth/authSlice';
-import { Navigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link} from 'react-router-dom';
 import { selectCurrentUserRole, selectIsAuthenticated } from '../features/auth/selectors';
 
 export default function Login() {
@@ -13,8 +12,11 @@ export default function Login() {
   const { loading, error } = useSelector(state => state.auth);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectCurrentUserRole);
-  const [email, setEmail] = useState(''); 
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -26,9 +28,51 @@ export default function Login() {
     }
   }, [isAuthenticated, userRole, navigate]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(loginAsync({ email, password })); // Send email instead of username
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    dispatch(loginAsync({ email: formData.email, password: formData.password }));
+  };
+
+  const getFieldError = (fieldName) => {
+    return validationErrors[fieldName] || '';
   };
 
   return (
@@ -54,40 +98,50 @@ export default function Login() {
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email" // Changed to email type
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            Email address
+          </label>
+          <div className="mt-1">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                getFieldError('email') ? 'border-red-300' : 'border-gray-300'
+              }`}
+            />
+          </div>
+          {getFieldError('email') && (
+            <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
+          )}
+        </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Password
+          </label>
+          <div className="mt-1">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                getFieldError('password') ? 'border-red-300' : 'border-gray-300'
+              }`}
+            />
+          </div>
+          {getFieldError('password') && (
+            <p className="mt-1 text-sm text-red-600">{getFieldError('password')}</p>
+          )}
+        </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
