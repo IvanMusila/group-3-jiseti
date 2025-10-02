@@ -3,13 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReports, deleteReport } from '../reportsSlice';
 import { Link, useSearchParams } from 'react-router-dom';
 import { selectCurrentUserId, selectCurrentUserRole } from '../../auth/selectors';
+import { resolveMediaUrl, describeMediaType } from '../utils/media';
 
 export default function ReportList() {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get('page') || 1);
   const { items, totalPages, totalItems, loading, error } = useSelector((state) => state.reports || {});
-
 
   const currentUserId = useSelector(selectCurrentUserId);
   const currentRole = useSelector(selectCurrentUserRole);
@@ -30,7 +30,7 @@ export default function ReportList() {
   }
 
   return (
-    <section className="space-y-8"> 
+    <section className="space-y-8">
       <header className="space-y-2">
         <p className="text-sm uppercase tracking-widest text-gray-500">Community timeline</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -122,21 +122,59 @@ export default function ReportList() {
               )}
 
               {report.attachments?.length > 0 && (
-                <ul className="mt-4 space-y-2 text-xs text-gray-600">
-                  {report.attachments.map((file, idx) => (
-                    <li
-                      key={`${file.url || file.name || idx}-${idx}`}
-                      className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2"
-                    >
-                      <span className="truncate pr-3">
-                        {file.name || `Attachment ${idx + 1}`}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-widest text-gray-400">
-                        {file.type?.split('/')[0] || 'file'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {report.attachments.map((file, idx) => {
+                    const mediaUrl = resolveMediaUrl(file.url);
+                    const mediaType = describeMediaType(file.type);
+                    const label = file.name || `Attachment ${idx + 1}`;
+                    const isImage = file.type?.startsWith('image/');
+                    const isVideo = file.type?.startsWith('video/');
+                    const isAudio = file.type?.startsWith('audio/');
+
+                    return (
+                      <a
+                        key={`${file.url || file.name || idx}-${idx}`}
+                        href={mediaUrl || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 transition hover:border-yellow-900"
+                      >
+                        <div className="aspect-video w-full bg-gray-100">
+                          {isImage && mediaUrl ? (
+                            <img
+                              src={mediaUrl}
+                              alt={label}
+                              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                              loading="lazy"
+                            />
+                          ) : isVideo && mediaUrl ? (
+                            <video src={mediaUrl} controls className="h-full w-full object-cover" />
+                          ) : isAudio && mediaUrl ? (
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white px-4 text-sm text-gray-600">
+                              <span className="text-3xl">🎧</span>
+                              <audio src={mediaUrl} controls className="w-full" />
+                            </div>
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white px-4 text-sm text-gray-600">
+                              <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-yellow-900">
+                                {mediaType}
+                              </span>
+                              <span className="truncate text-center text-xs text-gray-500">
+                                {label}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-3 text-xs text-gray-600">
+                          <span className="truncate pr-2 font-medium text-gray-700">{label}</span>
+                          <span className="text-[10px] uppercase tracking-widest text-gray-400">
+                            {mediaType}
+                          </span>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
               )}
             </li>
           ))}

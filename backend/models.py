@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
+import mimetypes
 
 db = SQLAlchemy()
 
@@ -44,8 +45,26 @@ class Report(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     user = db.relationship('User', backref='reports')
+    media_files = db.relationship(
+        'ReportMedia',
+        backref='report',
+        lazy=True,
+        cascade='all, delete-orphan'
+    )
 
     def to_dict(self):
+        media_payload = [media_file.to_dict() for media_file in self.media_files]
+        attachments_payload = [
+            {
+                'id': media['id'],
+                'name': media['original_filename'],
+                'url': media['url'],
+                'type': mimetypes.guess_type(media['original_filename'])[0],
+                'size': media['file_size']
+            }
+            for media in media_payload
+        ]
+
         return {
             'id': self.id,
             'type': self.type,
@@ -55,7 +74,30 @@ class Report(db.Model):
             'status': self.status,
             'created_by': self.created_by,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'media': media_payload,
+            'attachments': attachments_payload
+        }
+
+
+class ReportMedia(db.Model):
+    __tablename__ = 'report_media'
+    id = db.Column(db.Integer, primary_key=True)
+    report_id = db.Column(db.Integer, db.ForeignKey('reports.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_size = db.Column(db.Integer, nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'original_filename': self.original_filename,
+            'file_size': self.file_size,
+            'uploaded_at': self.uploaded_at.isoformat(),
+            'url': f'/api/v1/media/{self.filename}'
         }
 
 # class ReportMedia(db.Model):

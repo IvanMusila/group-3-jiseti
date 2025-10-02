@@ -1,10 +1,12 @@
-from flask import Flask, jsonify, request, Blueprint
+from flask import Flask, jsonify, request, Blueprint, current_app, send_from_directory
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
-from models import db, User, Report
+from werkzeug.utils import secure_filename
+from models import db, User, Report, ReportMedia
 import os
 import logging
 import traceback
+from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,7 +25,17 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
-    
+    app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_SIZE", 16 * 1024 * 1024))
+
+    upload_folder = os.path.join(app.instance_path, "uploads")
+    os.makedirs(upload_folder, exist_ok=True)
+    app.config["UPLOAD_FOLDER"] = upload_folder
+    app.config["ALLOWED_EXTENSIONS"] = {
+        "png", "jpg", "jpeg", "gif", "webp",
+        "mp4", "mov", "avi", "mkv", "webm",
+        "mp3", "wav", "aac", "ogg",
+        "pdf", "doc", "docx", "xls", "xlsx", "csv"
+    }
 
     # ✅ CORS applied globally for all API routes
     CORS(
@@ -44,6 +56,10 @@ def create_app():
     # Init extensions
     db.init_app(app)
     jwt.init_app(app)
+
+    def allowed_file(filename: str) -> bool:
+        allowed_extensions = app.config.get("ALLOWED_EXTENSIONS", set())
+        return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_extensions
 
     # CREATE AUTH BLUEPRINT
     auth_bp = Blueprint("auth", __name__)
@@ -247,33 +263,94 @@ def create_app():
     @jwt_required()
     def create_report():
         try:
-            # Only handle JSON requests - remove multipart/form-data logic
-            data = request.get_json()
-            
-            if not data:
-                return jsonify({'message': 'Request must be JSON'}), 400
+            content_type = request.content_type or ""
+            is_multipart = "multipart/form-data" in content_type
 
-            # Validate required fields
-            if not data.get('title') or not data.get('description'):
+            data = request.form if is_multipart else (request.get_json() or {})
+
+            if not data:
+                return jsonify({'message': 'Request must include report data'}), 400
+
+            title = (data.get('title') or '').strip()
+            description = (data.get('description') or '').strip()
+
+            if not title or not description:
                 return jsonify({'message': 'Title and description are required'}), 400
 
-            # Create report
             report = Report(
                 type=data.get('type', 'corruption'),
-                title=data['title'],
-                description=data['description'],
+                title=title,
+                description=description,
                 location=data.get('location', 'Unknown location'),
                 created_by=get_jwt_identity()
             )
 
             db.session.add(report)
+            db.session.flush()
+
+            saved_files = []
+
+            if is_multipart:
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+                os.makedirs(upload_folder, exist_ok=True)
+                files = request.files.getlist('media')
+
+                for uploaded_file in files:
+                    if not uploaded_file or not uploaded_file.filename:
+                        continue
+
+                    original_name = uploaded_file.filename
+                    if not allowed_file(original_name):
+                        raise ValueError(f"File type not allowed: {original_name}")
+
+                    extension = original_name.rsplit('.', 1)[1].lower()
+                    generated_name = f"{uuid4().hex}.{extension}"
+                    secured_name = secure_filename(generated_name)
+                    absolute_path = os.path.join(upload_folder, secured_name)
+
+                    uploaded_file.save(absolute_path)
+                    saved_files.append(absolute_path)
+
+                    if absolute_path.startswith(current_app.instance_path):
+                        storage_path = os.path.relpath(absolute_path, current_app.instance_path)
+                    else:
+                        storage_path = absolute_path
+
+                    media_record = ReportMedia(
+                        report=report,
+                        filename=secured_name,
+                        original_filename=original_name,
+                        file_path=storage_path,
+                        file_size=os.path.getsize(absolute_path)
+                    )
+                    db.session.add(media_record)
+
             db.session.commit()
 
             return jsonify(report.to_dict()), 201
 
+        except ValueError as ve:
+            db.session.rollback()
+            current_app.logger.warning(f"Validation error creating report: {str(ve)}")
+            for path in locals().get('saved_files', []):
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    current_app.logger.exception("Failed to cleanup uploaded file after validation error")
+            return jsonify({'message': str(ve)}), 400
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error creating report: {str(e)}")
+
+            upload_folder = current_app.config.get('UPLOAD_FOLDER')
+            for path in locals().get('saved_files', []):
+                try:
+                    if upload_folder and path.startswith(upload_folder) and os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    current_app.logger.exception("Failed to cleanup uploaded file")
+
             return jsonify({'message': 'Failed to create report'}), 500
 
     @reports_bp.route('/reports/<int:report_id>', methods=['PUT'])
@@ -308,6 +385,17 @@ def create_app():
     def delete_report(report_id):
         try:
             report = Report.query.get_or_404(report_id)
+
+            for media in list(report.media_files):
+                media_path = media.file_path
+                if not os.path.isabs(media_path):
+                    media_path = os.path.join(current_app.instance_path, media_path)
+                try:
+                    if os.path.exists(media_path):
+                        os.remove(media_path)
+                except OSError:
+                    current_app.logger.warning(f"Failed to remove media file {media_path}")
+
             db.session.delete(report)
             db.session.commit()
             
@@ -316,6 +404,11 @@ def create_app():
         except Exception as e:
             db.session.rollback()
             return jsonify({'message': 'Failed to delete report'}), 500
+
+    @reports_bp.route('/media/<path:filename>', methods=['GET'])
+    def get_report_media(filename):
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        return send_from_directory(upload_folder, filename)
 
     # Register the reports blueprint
     app.register_blueprint(reports_bp, url_prefix="/api/v1")

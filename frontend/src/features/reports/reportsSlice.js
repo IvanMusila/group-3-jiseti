@@ -9,9 +9,9 @@ export const fetchReports = createAsyncThunk('reports/fetch', async (page = 1) =
 });
 
 export const createReport = createAsyncThunk('reports/create', async (payload) => {
-  const { data } = await api.post('/reports', payload, {
-    headers: { 'Content-Type': 'application/json' }
-  });
+  const isFormData = typeof FormData !== 'undefined' && payload instanceof FormData;
+  const config = isFormData ? {} : { headers: { 'Content-Type': 'application/json' } };
+  const { data } = await api.post('/reports', payload, config);
   return data;
 });
 

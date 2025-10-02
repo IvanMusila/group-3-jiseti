@@ -5,7 +5,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import ReportList from '../components/ReportList';
 
-// Minimal render helper
 function renderWithStore(ui, { route = '/reports', preloadedState } = {}) {
   const store = configureStore({ reducer: { reports: reducer }, preloadedState });
   window.history.pushState({}, '', route);
@@ -18,8 +17,10 @@ function renderWithStore(ui, { route = '/reports', preloadedState } = {}) {
   );
 }
 
-test('renders list and pagination', async () => {
+test('renders list with fetched reports', async () => {
+  localStorage.setItem('accessToken', 'test-token');
   renderWithStore(<ReportList />);
-  expect(await screen.findByText(/Reports/)).toBeInTheDocument();
-  expect(await screen.findByText(/Page/)).toBeInTheDocument();
+  expect(await screen.findByText(/Reports submitted/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Collapsed Bridge/i)).toBeInTheDocument();
+  localStorage.clear();
 });

@@ -36,13 +36,15 @@ const seedReports = [
 const server = globalThis.mswServer;
 const http = globalThis.mswHttp;
 const HttpResponse = globalThis.mswHttpResponse;
+const apiPath = (path) => `*/api/v1${path}`;
 
 let mockReports = seedReports.map((report) => ({ ...report }));
 
 beforeEach(() => {
+  localStorage.setItem('accessToken', 'test-token');
   mockReports = seedReports.map((report) => ({ ...report }));
   server.use(
-    http.get('/reports', ({ request }) => {
+    http.get(apiPath('/reports'), ({ request }) => {
       const url = new URL(request.url);
       const queryStatus = url.searchParams.get('status');
       const assigned = url.searchParams.get('assigned');
@@ -58,14 +60,14 @@ beforeEach(() => {
         totalItems: responseItems.length,
       });
     }),
-    http.get('/reports/:id', ({ params }) => {
+    http.get(apiPath('/reports/:id'), ({ params }) => {
       const report = mockReports.find((item) => item.id === Number(params.id));
       if (!report) {
         return HttpResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
       }
       return HttpResponse.json(report);
     }),
-    http.put('/reports/:id', async ({ params, request }) => {
+    http.put(apiPath('/reports/:id'), async ({ params, request }) => {
       const body = await request.json();
       const idx = mockReports.findIndex((item) => item.id === Number(params.id));
       if (idx === -1) {
@@ -79,6 +81,10 @@ beforeEach(() => {
       return HttpResponse.json(mockReports[idx]);
     })
   );
+});
+
+afterEach(() => {
+  localStorage.clear();
 });
 
 function makeStore() {
@@ -95,7 +101,7 @@ test('fetchAdminReports populates state', async () => {
 });
 
 test('fetchAdminReports handles API errors', async () => {
-  server.use(http.get('/reports', () => HttpResponse.error()));
+  server.use(http.get(apiPath('/reports'), () => HttpResponse.error()));
   const store = makeStore();
   await store.dispatch(fetchAdminReports({ page: 1 }));
   const state = store.getState().adminReports;

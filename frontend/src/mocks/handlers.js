@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { API_BASE_URL } from '../lib/api';
 
 const ADMIN_ROLES = [
   { id: 'ops-team', name: 'Operations Team' },
@@ -16,7 +17,6 @@ function historyEntry(type, props = {}) {
   };
 }
 
-// Seed data with mixed ownership, attachments, and statuses
 let seedId = 4;
 let reports = [
   {
@@ -31,7 +31,7 @@ let reports = [
     createdBy: 7,
     assignedTo: null,
     attachments: [
-      { name: 'bridge.jpg', size: 245678, type: 'image/jpeg', url: '#' },
+      { name: 'bridge.jpg', size: 245678, type: 'image/jpeg', url: '/api/v1/media/bridge.jpg' },
     ],
     moderationNotes: [],
     history: [historyEntry('created', { status: 'pending', note: 'Citizen submitted report' })],
@@ -78,9 +78,9 @@ let reports = [
 ];
 
 function paginate(arr, page = 1, limit = 10) {
-  const start = (page-1)*limit;
-  const items = arr.slice(start, start+limit);
-  return { items, page, totalPages: Math.max(1, Math.ceil(arr.length/limit)), totalItems: arr.length };
+  const start = (page - 1) * limit;
+  const items = arr.slice(start, start + limit);
+  return { items, page, totalPages: Math.max(1, Math.ceil(arr.length / limit)), totalItems: arr.length };
 }
 
 function matchesFilters(report, { status, type, search, assigned, from, to }) {
@@ -110,7 +110,7 @@ async function parseBody(request) {
             name: attachment.name,
             size: attachment.size,
             type: attachment.type,
-            url: '#',
+            url: '/api/v1/media/mock-file',
           }
         : null,
     };
@@ -120,8 +120,20 @@ async function parseBody(request) {
   return { body, attachment: null };
 }
 
+const apiBasePath = (() => {
+  try {
+    const url = new URL(API_BASE_URL, 'http://localhost');
+    const trimmed = url.pathname.replace(/\/$/, '');
+    return trimmed === '/' ? '' : trimmed;
+  } catch (error) {
+    return '';
+  }
+})();
+
+const withBase = (path) => `*${apiBasePath}${path}`;
+
 export const handlers = [
-  http.get('/reports', ({ request }) => {
+  http.get(withBase('/reports'), ({ request }) => {
     const url = new URL(request.url);
     const page = Number(url.searchParams.get('page') || 1);
     const limit = Number(url.searchParams.get('limit') || 10);
@@ -144,7 +156,7 @@ export const handlers = [
     return HttpResponse.json(paginate(filtered, page, limit));
   }),
 
-  http.get('/reports/:id', ({ params }) => {
+  http.get(withBase('/reports/:id'), ({ params }) => {
     const id = Number(params.id);
     const report = reports.find((item) => item.id === id);
     if (!report) {
@@ -153,14 +165,14 @@ export const handlers = [
     return HttpResponse.json(report);
   }),
 
-  http.post('/reports', async ({ request }) => {
+  http.post(withBase('/reports'), async ({ request }) => {
     const { body, attachment } = await parseBody(request);
     const newItem = {
       id: seedId++,
       status: 'pending',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: 7, // pretend current user
+      createdBy: 7,
       assignedTo: body.assignedTo || null,
       attachments: attachment ? [attachment] : [],
       moderationNotes: [],
@@ -171,7 +183,7 @@ export const handlers = [
     return HttpResponse.json(newItem, { status: 201 });
   }),
 
-  http.put('/reports/:id', async ({ params, request }) => {
+  http.put(withBase('/reports/:id'), async ({ params, request }) => {
     const id = Number(params.id);
     const idx = reports.findIndex(r => r.id === id);
     if (idx === -1) return HttpResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
@@ -245,7 +257,7 @@ export const handlers = [
     return HttpResponse.json(reports[idx]);
   }),
 
-  http.delete('/reports/:id', ({ params }) => {
+  http.delete(withBase('/reports/:id'), ({ params }) => {
     const id = Number(params.id);
     const item = reports.find(r => r.id === id);
     if (!item) return HttpResponse.json({ error: 'NOT_FOUND' }, { status: 404 });

@@ -16,6 +16,7 @@ import {
   statusLabel,
 } from '../config';
 import '../styles/adminReports.css';
+import { resolveMediaUrl, describeMediaType } from '../../reports/utils/media';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -61,7 +62,12 @@ export default function AdminReportDetail() {
       name: file.name || `Attachment ${index + 1}`,
       size: file.size,
       type: file.type,
-      url: file.url,
+      url: resolveMediaUrl(file.url),
+      rawUrl: file.url,
+      kind: describeMediaType(file.type),
+      isImage: file.type?.startsWith('image/'),
+      isVideo: file.type?.startsWith('video/'),
+      isAudio: file.type?.startsWith('audio/'),
     }));
   }, [report]);
 
@@ -296,17 +302,42 @@ export default function AdminReportDetail() {
         {attachments.length === 0 ? (
           <p className="admin-empty">No attachments provided.</p>
         ) : (
-          <ul className="admin-attachments">
+          <div className="admin-attachments-grid">
             {attachments.map((file) => (
-              <li key={file.id}>
-                <div>
-                  <strong>{file.name}</strong>
-                  <span>{file.type || 'File'}</span>
+              <a
+                key={file.id}
+                href={file.url || file.rawUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="admin-attachment-card"
+              >
+                <div className="admin-attachment-card__preview">
+                  {file.isImage && file.url ? (
+                    <img src={file.url} alt={file.name} loading="lazy" />
+                  ) : file.isVideo && file.url ? (
+                    <video src={file.url} controls />
+                  ) : file.isAudio && file.url ? (
+                    <div className="admin-attachment-card__audio">
+                      <span role="img" aria-label="Audio">🎧</span>
+                      <audio src={file.url} controls />
+                    </div>
+                  ) : (
+                    <div className="admin-attachment-card__fallback">
+                      <span className="admin-attachment-card__badge">{file.kind}</span>
+                      <span>{file.name}</span>
+                    </div>
+                  )}
                 </div>
-                <span>{file.size ? `${Math.round(file.size / 1024)} KB` : '—'}</span>
-              </li>
+                <div className="admin-attachment-card__meta">
+                  <span className="admin-attachment-card__name">{file.name}</span>
+                  <span className="admin-attachment-card__info">
+                    {file.kind}
+                    {file.size ? ` • ${Math.round(file.size / 1024)} KB` : ''}
+                  </span>
+                </div>
+              </a>
             ))}
-          </ul>
+          </div>
         )}
       </article>
 
