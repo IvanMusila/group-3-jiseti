@@ -208,3 +208,32 @@ def test_owner_can_replace_media_with_new_upload(client, app):
         stored_media = ReportMedia.query.filter_by(report_id=report['id']).all()
         assert len(stored_media) == 1
         assert stored_media[0].original_filename == 'new-photo.png'
+
+
+def test_get_reports_filters_by_status(client, app):
+    token, _ = register(client, 'kyle', 'kyle@example.com')
+    pending_report = create_sample_report(client, token, title='Pending case')
+    resolved_report = create_sample_report(client, token, title='Resolved case')
+
+    with app.app_context():
+        stored = Report.query.get(resolved_report['id'])
+        stored.status = 'resolved'
+        db.session.commit()
+
+    response = client.get('/api/v1/reports?status=resolved')
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['totalItems'] == 1
+    assert payload['items'][0]['id'] == resolved_report['id']
+
+
+def test_get_reports_supports_search(client, app):
+    token, _ = register(client, 'lisa', 'lisa@example.com')
+    create_sample_report(client, token, title='Blocked drainage')
+    target = create_sample_report(client, token, title='Collapsed bridge')
+
+    response = client.get('/api/v1/reports?search=bridge')
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['totalItems'] == 1
+    assert payload['items'][0]['id'] == target['id']

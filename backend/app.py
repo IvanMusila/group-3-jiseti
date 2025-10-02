@@ -3,11 +3,13 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from typing import Optional
+from datetime import datetime, timezone, timedelta
 import json
 try:
     from .models import db, User, Report, ReportMedia
 except ImportError:  # pragma: no cover - fallback for script execution
     from models import db, User, Report, ReportMedia
+from sqlalchemy import or_
 import os
 import logging
 import traceback
@@ -251,22 +253,68 @@ def create_app(instance_path: Optional[str] = None):
     def get_reports():
         if request.method == 'OPTIONS':
             return jsonify({"status": "preflight ok"}), 200
-        
+
         try:
             page = request.args.get('page', 1, type=int)
-            per_page = 10
-            
-            # Get paginated reports
-            reports = Report.query.order_by(Report.created_at.desc()).paginate(
-                page=page, per_page=per_page, error_out=False
-            )
-            
-            return jsonify({
+            per_page = request.args.get('limit', 10, type=int)
+            status = request.args.get('status', type=str)
+            report_type = request.args.get('type', type=str)
+            search = request.args.get('search', '', type=str).strip()
+            date_from = request.args.get('from', type=str)
+            date_to = request.args.get('to', type=str)
+
+            query = Report.query
+
+            if status:
+                query = query.filter(Report.status == status)
+
+            if report_type:
+                query = query.filter(Report.type == report_type)
+
+            if search:
+                like_pattern = f"%{search}%"
+                query = query.filter(or_(Report.title.ilike(like_pattern), Report.description.ilike(like_pattern)))
+
+            if date_from:
+                try:
+                    start = datetime.fromisoformat(date_from)
+                    if start.tzinfo is None:
+                        start = start.replace(tzinfo=timezone.utc)
+                    else:
+                        start = start.astimezone(timezone.utc)
+                    query = query.filter(Report.created_at >= start)
+                except ValueError:
+                    logger.warning(f"Invalid 'from' date provided: {date_from}")
+
+            if date_to:
+                try:
+                    end = datetime.fromisoformat(date_to)
+                    if end.tzinfo is None:
+                        end = end.replace(tzinfo=timezone.utc)
+                    else:
+                        end = end.astimezone(timezone.utc)
+                    end = end + timedelta(days=1)
+                    query = query.filter(Report.created_at < end)
+                except ValueError:
+                    logger.warning(f"Invalid 'to' date provided: {date_to}")
+
+            sort = request.args.get('sort', 'newest')
+            if sort == 'oldest':
+                query = query.order_by(Report.created_at.asc())
+            else:
+                query = query.order_by(Report.created_at.desc())
+
+            per_page = max(1, min(per_page, 50))
+            reports = query.paginate(page=page, per_page=per_page, error_out=False)
+
+            response_payload = {
                 "items": [report.to_dict() for report in reports.items],
                 "totalPages": reports.pages,
                 "totalItems": reports.total,
                 "page": page
-            }), 200
+            }
+
+            return jsonify(response_payload), 200
         except Exception as e:
             logger.error(f"Error fetching reports: {str(e)}")
             return jsonify({"error": "Internal server error"}), 500
