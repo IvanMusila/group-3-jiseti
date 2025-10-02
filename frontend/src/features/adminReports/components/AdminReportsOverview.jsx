@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import {
@@ -42,11 +42,16 @@ function formatDate(value) {
 export default function AdminReportsOverview() {
   const dispatch = useDispatch();
   const { items, page, totalPages, totalItems, loading, error, filters } = useSelector(selectAdminReportsState);
-  const { status, type, search, sort, assigned, dateFrom, dateTo } = filters;
+  const [formFilters, setFormFilters] = useState(filters);
+  const { status, type, search, sort, assigned, dateFrom, dateTo } = formFilters;
+
+  useEffect(() => {
+    setFormFilters(filters);
+  }, [filters]);
 
   useEffect(() => {
     dispatch(fetchAdminReports({ page, filters }));
-  }, [dispatch, page, status, type, search, sort, filters.limit, assigned, dateFrom, dateTo]);
+  }, [dispatch, page, filters.status, filters.type, filters.search, filters.sort, filters.assigned, filters.dateFrom, filters.dateTo, filters.limit]);
 
   const summary = useMemo(() => ({
     pending: items.filter((r) => r.status === 'pending').length,
@@ -55,16 +60,19 @@ export default function AdminReportsOverview() {
   }), [items]);
 
   const updateFilter = (name, value) => {
-    dispatch(setAdminFilters({ [name]: value }));
+    setFormFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const changePage = (next) => {
     dispatch(setAdminFilters({ page: next }));
+    dispatch(fetchAdminReports({ page: next, filters }));
   };
 
   const onSubmit = (event) => {
     event.preventDefault();
-    dispatch(fetchAdminReports({ page: 1, filters }));
+    const applied = { ...formFilters };
+    dispatch(setAdminFilters(applied));
+    dispatch(fetchAdminReports({ page: 1, filters: applied }));
   };
 
   return (
