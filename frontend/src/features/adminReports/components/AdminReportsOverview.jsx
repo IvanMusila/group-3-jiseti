@@ -9,6 +9,7 @@ import {
 } from '../adminReportsSlice';
 import {
   ADMIN_ASSIGNEE_OPTIONS,
+  REPORT_TYPE_FILTERS,
   STATUS_LABELS,
   assigneeLabel,
   statusLabel,
@@ -20,11 +21,7 @@ const statusOptions = [
   ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ label, value })),
 ];
 
-const typeOptions = [
-  { label: 'All types', value: '' },
-  { label: 'Red-flag', value: 'red-flag' },
-  { label: 'Intervention', value: 'intervention' },
-];
+const typeOptions = REPORT_TYPE_FILTERS;
 
 const sortOptions = [
   { label: 'Newest first', value: 'newest' },
@@ -65,7 +62,10 @@ export default function AdminReportsOverview() {
     dispatch(setAdminFilters({ page: next }));
   };
 
-  const onSubmit = (event) => event.preventDefault();
+  const onSubmit = (event) => {
+    event.preventDefault();
+    dispatch(fetchAdminReports({ page: 1, filters }));
+  };
 
   return (
     <section className="admin-page">

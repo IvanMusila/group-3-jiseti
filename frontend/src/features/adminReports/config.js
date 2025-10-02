@@ -56,3 +56,11 @@ export function assigneeLabel(value) {
   const match = ADMIN_ASSIGNMENT_CHOICES.find((option) => option.value === value);
   return match ? match.label : value || 'Unassigned';
 }
+
+export const REPORT_TYPE_FILTERS = [
+  { value: '', label: 'All types' },
+  { value: 'corruption', label: 'Corruption' },
+  { value: 'infrastructure', label: 'Infrastructure' },
+  { value: 'sanitation', label: 'Sanitation' },
+  { value: 'safety', label: 'Safety' },
+];
