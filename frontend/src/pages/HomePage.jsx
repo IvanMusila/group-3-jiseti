@@ -148,7 +148,7 @@ const HomePage = () => {
             ) : (
               <div className="inline-flex rounded-md shadow">
                 <Link
-                  to="/dashboard"
+                  to="/reports"
                   className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-black bg-white hover:bg-yellow-950 hover:text-white"
                 >
                   Go to Dashboard
