@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReports, deleteReport } from '../reportsSlice';
 import { Link, useSearchParams } from 'react-router-dom';
-import { selectCurrentUserId, selectCurrentUserRole } from '../../auth/selectors';
+import { selectCurrentUserId } from '../../auth/selectors';
 import { resolveMediaUrl, describeMediaType } from '../utils/media';
 
 export default function ReportList() {
@@ -12,11 +12,11 @@ export default function ReportList() {
   const { items, totalPages, totalItems, loading, error } = useSelector((state) => state.reports || {});
 
   const currentUserId = useSelector(selectCurrentUserId);
-  const currentRole = useSelector(selectCurrentUserRole);
-  const canModerate = currentRole === 'admin';
-
-  const canEditDelete = (report) =>
-    report?.status === 'pending' && (report?.createdBy === currentUserId || canModerate);
+  const canEditDelete = (report) => {
+    const ownerId = report?.createdBy ?? report?.created_by ?? null;
+    if (!ownerId) return false;
+    return report?.status === 'pending' && String(ownerId) === String(currentUserId);
+  };
 
   useEffect(() => {
     dispatch(fetchReports(requestedPage));
@@ -37,7 +37,7 @@ export default function ReportList() {
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900">Reports submitted</h1>
             <p className="max-w-2xl text-sm text-gray-600">
-              Track progress on the concerns raised by neighbours. Admins can moderate pending
+              Track progress on community concerns. You can update or withdraw your own pending
               reports directly from here.
             </p>
           </div>

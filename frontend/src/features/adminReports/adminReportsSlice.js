@@ -39,17 +39,20 @@ function buildQuery({ page = 1, filters = {} }) {
   return params.toString();
 }
 
+function resolveCreatedAt(value) {
+  const timestamp = value?.createdAt ?? value?.created_at;
+  if (!timestamp) return 0;
+  const parsed = Date.parse(timestamp);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 function applyClientSort(items, sort) {
   if (!Array.isArray(items) || !items.length) return items;
   if (sort === 'oldest') {
-    return [...items].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
+    return [...items].sort((a, b) => resolveCreatedAt(a) - resolveCreatedAt(b));
   }
 
-  return [...items].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  return [...items].sort((a, b) => resolveCreatedAt(b) - resolveCreatedAt(a));
 }
 
 export const fetchAdminReports = createAsyncThunk(

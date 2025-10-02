@@ -2,7 +2,12 @@ from flask import Flask, jsonify, request, Blueprint, current_app, send_from_dir
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from models import db, User, Report, ReportMedia
+from typing import Optional
+import json
+try:
+    from .models import db, User, Report, ReportMedia
+except ImportError:  # pragma: no cover - fallback for script execution
+    from models import db, User, Report, ReportMedia
 import os
 import logging
 import traceback
@@ -13,8 +18,13 @@ logger = logging.getLogger(__name__)
 
 jwt = JWTManager()
 
-def create_app():
-    app = Flask(__name__)
+def create_app(instance_path: Optional[str] = None):
+    resolved_instance_path = instance_path or os.getenv("FLASK_INSTANCE_PATH")
+    app_kwargs = {}
+    if resolved_instance_path:
+        app_kwargs["instance_path"] = resolved_instance_path
+
+    app = Flask(__name__, **app_kwargs)
 
     database_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
     
@@ -26,6 +36,8 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "super-secret")
     app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_SIZE", 16 * 1024 * 1024))
+
+    os.makedirs(app.instance_path, exist_ok=True)
 
     upload_folder = os.path.join(app.instance_path, "uploads")
     os.makedirs(upload_folder, exist_ok=True)
@@ -356,35 +368,141 @@ def create_app():
     @reports_bp.route('/reports/<int:report_id>', methods=['PUT'])
     @jwt_required()
     def update_report(report_id):
+        saved_files = []
         try:
-            data = request.get_json()
+            current_user_id = get_jwt_identity()
             report = Report.query.get_or_404(report_id)
-            
-            # Update fields
-            if 'title' in data:
-                report.title = data['title']
-            if 'description' in data:
-                report.description = data['description']
-            if 'location' in data:
-                report.location = data['location']
-            if 'type' in data:
-                report.type = data['type']
-            if 'status' in data:
-                report.status = data['status']
-                
+
+            if str(report.created_by) != str(current_user_id):
+                return jsonify({'message': 'You do not have permission to modify this report'}), 403
+
+            if report.status != 'pending':
+                return jsonify({'message': 'Only pending reports can be modified'}), 403
+
+            content_type = request.content_type or ""
+            is_multipart = 'multipart/form-data' in content_type
+            data = request.form if is_multipart else (request.get_json() or {})
+
+            editable_fields = {
+                'title': 'title',
+                'description': 'description',
+                'location': 'location',
+                'type': 'type'
+            }
+
+            for payload_key, attr in editable_fields.items():
+                if payload_key in data and data[payload_key] is not None:
+                    setattr(report, attr, data[payload_key])
+
+            remove_media_ids = data.get('remove_media_ids')
+            parsed_remove_ids = []
+            if remove_media_ids:
+                if isinstance(remove_media_ids, str):
+                    try:
+                        parsed = json.loads(remove_media_ids)
+                    except json.JSONDecodeError:
+                        parsed = [item.strip() for item in remove_media_ids.split(',') if item.strip()]
+                elif isinstance(remove_media_ids, (list, tuple)):
+                    parsed = list(remove_media_ids)
+                else:
+                    parsed = [remove_media_ids]
+
+                for raw_id in parsed:
+                    try:
+                        parsed_remove_ids.append(int(raw_id))
+                    except (TypeError, ValueError):
+                        current_app.logger.debug(f"Skipping invalid media id in removal list: {raw_id}")
+
+            if parsed_remove_ids:
+                media_to_remove = ReportMedia.query.filter(
+                    ReportMedia.report_id == report.id,
+                    ReportMedia.id.in_(parsed_remove_ids)
+                ).all()
+
+                for media in media_to_remove:
+                    media_path = media.file_path
+                    if not os.path.isabs(media_path):
+                        media_path = os.path.join(current_app.instance_path, media_path)
+                    try:
+                        if os.path.exists(media_path):
+                            os.remove(media_path)
+                    except OSError:
+                        current_app.logger.warning(f"Failed to remove media file {media_path}")
+                    db.session.delete(media)
+
+            if is_multipart:
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+                os.makedirs(upload_folder, exist_ok=True)
+                files = request.files.getlist('media')
+
+                for uploaded_file in files:
+                    if not uploaded_file or not uploaded_file.filename:
+                        continue
+
+                    original_name = uploaded_file.filename
+                    if not allowed_file(original_name):
+                        raise ValueError(f"File type not allowed: {original_name}")
+
+                    extension = original_name.rsplit('.', 1)[1].lower()
+                    generated_name = f"{uuid4().hex}.{extension}"
+                    secured_name = secure_filename(generated_name)
+                    absolute_path = os.path.join(upload_folder, secured_name)
+
+                    uploaded_file.save(absolute_path)
+                    saved_files.append(absolute_path)
+
+                    if absolute_path.startswith(current_app.instance_path):
+                        storage_path = os.path.relpath(absolute_path, current_app.instance_path)
+                    else:
+                        storage_path = absolute_path
+
+                    media_record = ReportMedia(
+                        report=report,
+                        filename=secured_name,
+                        original_filename=original_name,
+                        file_path=storage_path,
+                        file_size=os.path.getsize(absolute_path)
+                    )
+                    db.session.add(media_record)
+
             db.session.commit()
-            
+
             return jsonify(report.to_dict()), 200
-            
+
+        except ValueError as ve:
+            db.session.rollback()
+            current_app.logger.warning(f"Validation error updating report {report_id}: {str(ve)}")
+            for path in saved_files:
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    current_app.logger.exception("Failed to cleanup uploaded file after validation error")
+            return jsonify({'message': str(ve)}), 400
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Failed to update report {report_id}: {str(e)}")
+            upload_folder = current_app.config.get('UPLOAD_FOLDER')
+            for path in saved_files:
+                try:
+                    if upload_folder and path.startswith(upload_folder) and os.path.exists(path):
+                        os.remove(path)
+                except OSError:
+                    current_app.logger.exception("Failed to cleanup uploaded file during update")
             return jsonify({'message': 'Failed to update report'}), 500
 
     @reports_bp.route('/reports/<int:report_id>', methods=['DELETE'])
     @jwt_required()
     def delete_report(report_id):
         try:
+            current_user_id = get_jwt_identity()
             report = Report.query.get_or_404(report_id)
+
+            if str(report.created_by) != str(current_user_id):
+                return jsonify({'message': 'You do not have permission to delete this report'}), 403
+
+            if report.status != 'pending':
+                return jsonify({'message': 'Only pending reports can be deleted'}), 403
 
             for media in list(report.media_files):
                 media_path = media.file_path
@@ -398,11 +516,12 @@ def create_app():
 
             db.session.delete(report)
             db.session.commit()
-            
+
             return jsonify({'message': 'Report deleted successfully'}), 200
-            
+
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Failed to delete report {report_id}: {str(e)}")
             return jsonify({'message': 'Failed to delete report'}), 500
 
     @reports_bp.route('/media/<path:filename>', methods=['GET'])

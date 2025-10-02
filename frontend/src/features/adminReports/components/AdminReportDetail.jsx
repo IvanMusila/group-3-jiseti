@@ -17,6 +17,7 @@ import {
 } from '../config';
 import '../styles/adminReports.css';
 import { resolveMediaUrl, describeMediaType } from '../../reports/utils/media';
+import { selectCurrentUserId } from '../../auth/selectors';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -36,6 +37,7 @@ export default function AdminReportDetail() {
   const navigate = useNavigate();
   const report = useSelector((state) => selectAdminReportById(state, numericId));
   const { currentLoading, loading, error, actionLoading, actionError } = useSelector(selectAdminReportsState);
+  const currentUserId = useSelector(selectCurrentUserId);
   const [statusNote, setStatusNote] = useState('');
   const [assignmentNote, setAssignmentNote] = useState('');
   const [selectedAssignee, setSelectedAssignee] = useState('');
@@ -54,6 +56,18 @@ export default function AdminReportDetail() {
   }, [report?.assignedTo]);
 
   const isLoading = (!report && (loading || currentLoading));
+
+  const ownerId = useMemo(() => {
+    if (!report) return null;
+    return report.createdBy ?? report.created_by ?? null;
+  }, [report]);
+
+  const isOwner = useMemo(() => {
+    if (!ownerId || !currentUserId) return false;
+    return String(ownerId) === String(currentUserId);
+  }, [ownerId, currentUserId]);
+
+  const canModify = Boolean(report && isOwner && report.status === 'pending');
 
   const attachments = useMemo(() => {
     if (!report?.attachments?.length) return [];
@@ -81,10 +95,11 @@ export default function AdminReportDetail() {
     return 'Not provided';
   }, [report]);
 
-  const allowedTargets = useMemo(
-    () => (report ? allowedStatusTargets(report.status) : []),
-    [report?.status]
-  );
+  const allowedTargets = useMemo(() => {
+    if (!report) return [];
+    if (!canModify) return [];
+    return allowedStatusTargets(report.status);
+  }, [report?.status, canModify]);
 
   const timeline = useMemo(() => {
     if (report?.history?.length) return report.history;
@@ -99,7 +114,7 @@ export default function AdminReportDetail() {
   }, [report]);
 
   const handleStatusUpdate = async (statusValue) => {
-    if (!report) return;
+    if (!report || !canModify) return;
     const payloadNote = statusNote.trim();
     try {
       setPendingAction(`status-${statusValue}`);
@@ -122,7 +137,7 @@ export default function AdminReportDetail() {
   };
 
   const handleAssignment = async () => {
-    if (!report) return;
+    if (!report || !canModify) return;
     try {
       setPendingAction('assign');
       await dispatch(
@@ -194,15 +209,15 @@ export default function AdminReportDetail() {
           <dl>
             <div>
               <dt>Submitted by</dt>
-              <dd>User #{report.createdBy ?? '—'}</dd>
+              <dd>User #{report.createdBy ?? report.created_by ?? '—'}</dd>
             </div>
             <div>
               <dt>Created</dt>
-              <dd>{formatDate(report.createdAt)}</dd>
+              <dd>{formatDate(report.createdAt || report.created_at)}</dd>
             </div>
             <div>
               <dt>Last updated</dt>
-              <dd>{formatDate(report.updatedAt)}</dd>
+              <dd>{formatDate(report.updatedAt || report.updated_at)}</dd>
             </div>
             <div>
               <dt>Location</dt>
@@ -230,6 +245,7 @@ export default function AdminReportDetail() {
               onChange={(event) => setStatusNote(event.target.value)}
               placeholder="Add context for the status update"
               rows={4}
+              disabled={!canModify}
             />
           </label>
 
@@ -244,7 +260,7 @@ export default function AdminReportDetail() {
                   key={option.value}
                   type="button"
                   className="admin-action admin-action--primary"
-                  disabled={!allowed || noteRequiredMissing || actionLoading}
+                  disabled={!allowed || !canModify || noteRequiredMissing || actionLoading}
                   onClick={() => handleStatusUpdate(option.value)}
                 >
                   {isPending ? 'Updating…' : option.label}
@@ -253,7 +269,11 @@ export default function AdminReportDetail() {
             })}
           </div>
 
-          {allowedTargets.length === 0 && (
+          {!canModify && (
+            <p className="admin-meta">Only the report owner can update pending reports.</p>
+          )}
+
+          {canModify && allowedTargets.length === 0 && (
             <p className="admin-meta">Report has reached a final state.</p>
           )}
         </article>
@@ -265,6 +285,7 @@ export default function AdminReportDetail() {
             <select
               value={selectedAssignee}
               onChange={(event) => setSelectedAssignee(event.target.value)}
+              disabled={!canModify}
             >
               {ADMIN_ASSIGNMENT_CHOICES.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -281,6 +302,7 @@ export default function AdminReportDetail() {
               onChange={(event) => setAssignmentNote(event.target.value)}
               rows={3}
               placeholder="Let colleagues know why you reassigned this report"
+              disabled={!canModify}
             />
           </label>
 
@@ -288,12 +310,16 @@ export default function AdminReportDetail() {
             <button
               type="button"
               className="admin-action admin-action--primary"
-              disabled={actionLoading}
+              disabled={actionLoading || !canModify}
               onClick={handleAssignment}
             >
               {pendingAction === 'assign' && actionLoading ? 'Saving…' : 'Update assignment'}
             </button>
           </div>
+
+          {!canModify && (
+            <p className="admin-meta">Only the report owner can manage assignments while the report is pending.</p>
+          )}
         </article>
       </div>
 
@@ -348,7 +374,7 @@ export default function AdminReportDetail() {
             {timeline.map((entry) => (
               <li key={entry.id}>
                 <div>
-                  <strong>{formatDate(entry.createdAt)}</strong>
+                  <strong>{formatDate(entry.createdAt || entry.created_at)}</strong>
                   <span>{entry.type === 'assignment' ? 'Assignment' : statusLabel(entry.status)}</span>
                 </div>
                 {entry.note && <p>{entry.note}</p>}

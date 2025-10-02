@@ -234,7 +234,7 @@ export default function AdminReportsOverview() {
                   <span className="admin-badge">{report.type}</span>
                   <span className="admin-meta">User #{report.createdBy ?? '—'}</span>
                   <span className="admin-meta">{assigneeLabel(report.assignedTo)}</span>
-                  <span className="admin-meta">{formatDate(report.createdAt)}</span>
+                  <span className="admin-meta">{formatDate(report.createdAt || report.created_at)}</span>
                   <span className="admin-row__chevron" aria-hidden>→</span>
                 </Link>
               ))}

@@ -16,9 +16,9 @@ export const createReport = createAsyncThunk('reports/create', async (payload) =
 });
 
 export const updateReport = createAsyncThunk('reports/update', async ({ id, patch }) => {
-  const { data } = await api.put(`/reports/${id}`, patch, {
-    headers: { 'Content-Type': 'application/json' }
-  });
+  const isFormData = typeof FormData !== 'undefined' && patch instanceof FormData;
+  const config = isFormData ? {} : { headers: { 'Content-Type': 'application/json' } };
+  const { data } = await api.put(`/reports/${id}`, patch, config);
   return data;
 });
 
