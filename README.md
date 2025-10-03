@@ -112,8 +112,11 @@ Report Creation:
 ## Authors / Acknowledgement
 
   Chadwin Uhuru 
+  
   Ivan Musila 
+  
   Mathias Munene 
+  
   Antony Kiarie 
   
 Special thanks to the xAI community and our teammates for support and collaboration.
