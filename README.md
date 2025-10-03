@@ -18,8 +18,11 @@ Corruption and poor service delivery are key challenges to Africa’s developmen
 ## Tools Used
 
 **Backend**: Python, Flask, SQLAlchemy, Flask-Migrate, Psycopg (PostgreSQL adapter), Passlib (for password hashing)
+
 **Frontend**: React, Redux, Tailwind CSS
+
 **Database**: PostgreSQL
+
 **Other**: Alembic (for migrations), virtualenv (for Python environment management), GitHub Actions, Figma for UI/UX
 
 
