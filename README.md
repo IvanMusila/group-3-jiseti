@@ -81,28 +81,27 @@ Ensure PostgreSQL is installed and the jiseti_test database is created:createdb 
 
   From the backend directory:python app.py
 
+    The app will run locally on http://127.0.0.1:5000. 
+    For the deployed version, use: https://jiseti-backend-zt8g.onrender.com/.
 
-  The app will run locally on http://127.0.0.1:5000. For the deployed version, use: https://jiseti-backend-zt8g.onrender.com/.
+  Start the Frontend:
 
+  From the frontend directory:npm start
 
-Start the Frontend:
-
-From the frontend directory:npm start
-
-
-The app will run locally on http://localhost:3000. For the deployed version, use: https://jiseti-frontend-w02k.onrender.com/.
-
-
-Test the API:
-
-Register a user:curl -v -H "Content-Type: application/json" -d '{"username":"testuser","email":"test@example.com","password":"password"}' http://localhost:5000/auth/register
+    The app will run locally on http://localhost:3000. 
+    For the deployed version, use: https://jiseti-frontend-w02k.onrender.com/.
 
 
-Log in and create reports via the frontend or API endpoints.
+## Test the API:
+
+    Register a user:curl -v -H "Content-Type: application/json" -d '{"username":"testuser","email":"test@example.com","password":"password"}' http://localhost:5000/auth/register
+
+
+## Log in and create reports via the frontend or API endpoints.
 
 
 
-Screenshots
+## Screenshots
 Dashboard: 
 ![WhatsApp Image 2025-10-03 at 18 01 58](https://github.com/user-attachments/assets/270989d7-9c8f-4849-b1cc-f0d2ff7122ed)
 Report Creation: 
@@ -110,7 +109,7 @@ Report Creation:
 
 
 
-Authors / Acknowledgement
+## Authors / Acknowledgement
 
 Chadwin Uhuru - Contributor
 Ivan Musila - Contributor
@@ -118,7 +117,7 @@ Mathias Munene - Lead Developer
 Antony Kiarie - Contributor
 Special thanks to the xAI community and our teammates for support and collaboration.
 
-LICENSE
+## LICENSE
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ##front-end
