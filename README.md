@@ -16,44 +16,43 @@ Corruption and poor service delivery are key challenges to Africa’s developmen
 ---
 
 ## Tools Used
-Backend: Python, Flask, SQLAlchemy, Flask-Migrate, Psycopg (PostgreSQL adapter), Passlib (for password hashing)
-Frontend: React, Redux, Tailwind CSS
-Database: PostgreSQL
-Other: Alembic (for migrations), virtualenv (for Python environment management), GitHub Actions, Figma for UI/UX
+
+**Backend**: Python, Flask, SQLAlchemy, Flask-Migrate, Psycopg (PostgreSQL adapter), Passlib (for password hashing)
+**Frontend**: React, Redux, Tailwind CSS
+**Database**: PostgreSQL
+**Other**: Alembic (for migrations), virtualenv (for Python environment management), GitHub Actions, Figma for UI/UX
 
 
 ## Complete Setup Instructions
 
-  Clone the Repository:
+  ### Clone the Repository:
     git clone https://github.com/yourusername/jiseti.git
     cd jiseti
 
 
-Set Up the Virtual Environment:
+## Set Up the Virtual Environment:
 
-On Unix/MacOS:python3 -m venv venv
-source venv/bin/activate
-
-
-On Windows:python -m venv venv
-venv\Scripts\activate
+    On Unix/MacOS:python3 -m venv venv
+    source venv/bin/activate
 
 
+    On Windows:python -m venv venv
+    venv\Scripts\activate
 
 
-Install Dependencies:
+## Install Dependencies:
 
-Backend:cd backend
-pip install -r requirements.txt
+    Backend:cd backend
+    pip install -r requirements.txt
 
 
-Frontend:cd ../frontend
-npm install
+    Frontend:cd ../frontend
+    npm install
 
 
 
 
-Configure Environment:
+## Configure Environment:
 
 Create a .env file in the backend directory with:DATABASE_URL=postgresql+psycopg://postgres:your_password@localhost:5432/jiseti_test
 SECRET_KEY=your_secret_key_here
@@ -65,25 +64,25 @@ Ensure PostgreSQL is installed and the jiseti_test database is created:createdb 
 
 
 
-Apply Database Migrations:
-cd backend
-flask db upgrade
+## Apply Database Migrations:
+    cd backend
+    flask db upgrade
 
 
-Build the Frontend:
-cd ../frontend
-npm run build
+## Build the Frontend:
+    cd ../frontend
+    npm run build
 
 
 
-How to Run Your App
+## How to Run Your App
 
-Start the Backend:
+  Start the Backend:
 
-From the backend directory:python app.py
+  From the backend directory:python app.py
 
 
-The app will run locally on http://127.0.0.1:5000. For the deployed version, use: https://jiseti-backend-zt8g.onrender.com/.
+  The app will run locally on http://127.0.0.1:5000. For the deployed version, use: https://jiseti-backend-zt8g.onrender.com/.
 
 
 Start the Frontend:
